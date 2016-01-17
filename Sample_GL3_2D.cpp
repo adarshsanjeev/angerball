@@ -10,6 +10,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#define GRAV_CONST 0.009
 
 using namespace std;
 
@@ -38,6 +39,7 @@ GLuint programID;
 class Character {
 public:
 	float x, y;
+	float radius;
 	float angle;
 	float vel_x, vel_y;
 	float colour;
@@ -57,6 +59,14 @@ public:
 };
 
 Wall Floor;
+
+void gravity() {
+	Bird.vel_y -= GRAV_CONST;
+	if(Bird.y - Bird.radius < -3 && Bird.vel_y < 0)
+		Bird.vel_y = 0.5*abs(Bird.vel_y);
+	Bird.y += Bird.vel_y;
+	cout<<Bird.y<<endl;
+}
 
 //####################################################################################################
 
@@ -276,7 +286,7 @@ void keyboardChar (GLFWwindow* window, unsigned int key)
 		quit(window);
 		break;
 	case 'w':
-		Bird.y += 1;
+		Bird.vel_y += 0.1;
 		break;
 	default:
 		break;
@@ -411,11 +421,12 @@ void createBird ()
 {
 	Bird.x = 0;
 	Bird.y = 0;
+	Bird.radius = 0.3;
 	Bird.vel_x = 0;
 	Bird.vel_y = 0;
 
-	static GLfloat vertex_buffer_data [3*363];
-	static GLfloat color_buffer_data [3*363];
+	static GLfloat vertex_buffer_data [3*365];
+	static GLfloat color_buffer_data [3*365];
 
 	int k = 0;
 	vertex_buffer_data[0] = 0;
@@ -424,16 +435,16 @@ void createBird ()
 	vertex_buffer_data[1] = 0;
 	color_buffer_data[1] = 1;
 	k++;
-	vertex_buffer_data[2] = 0;
 	color_buffer_data[2] = 1;
+	vertex_buffer_data[2] = 0;
 	k++;
 
-	for (int i=1; i<=360; ++i)
+	for (int i=0; i<=360; ++i)
 	{
-		vertex_buffer_data[k] = cos((i*M_PI)/180);
+		vertex_buffer_data[k] = cos((i*M_PI)/180)*Bird.radius;
 		color_buffer_data[k] = 1;
 		k++;
-		vertex_buffer_data[k] = sin((i*M_PI)/180);
+		vertex_buffer_data[k] = sin((i*M_PI)/180)*Bird.radius;
 		color_buffer_data[k] = 0;
 		k++;
 		vertex_buffer_data[k] = 0;
@@ -442,7 +453,7 @@ void createBird ()
 	}
 
 	// create3DObject creates and returns a handle to a VAO that can be used later
-	Bird.sprite = create3DObject(GL_TRIANGLE_FAN, 361, vertex_buffer_data, color_buffer_data, GL_FILL);
+	Bird.sprite = create3DObject(GL_TRIANGLE_FAN, 362, vertex_buffer_data, color_buffer_data, GL_FILL);
 }
 
 float camera_rotation_angle = 90;
@@ -639,6 +650,8 @@ int main (int argc, char** argv)
 
 	// Poll for Keyboard and mouse events
 	glfwPollEvents();
+
+	gravity();
 
 	// Control based on time (Time based transformation like 5 degrees rotation every 0.5s)
 	current_time = glfwGetTime(); // Time in seconds
