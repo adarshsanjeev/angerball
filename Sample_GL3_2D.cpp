@@ -33,6 +33,33 @@ struct GLMatrices {
 
 GLuint programID;
 
+//####################################################################################################
+
+class Character {
+public:
+  float x, y;
+  float angle;
+  float vel_x, vel_y;
+  float colour;
+  VAO sprite;
+  void fall() {
+
+  }
+};
+
+Character Bird;
+
+class Wall {
+public:
+  float x, y;
+  float colour;
+  VAO *sprite;
+};
+
+Wall Floor;
+
+//####################################################################################################
+
 /* Function to load Shaders - Use it as it is */
 GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path) {
 
