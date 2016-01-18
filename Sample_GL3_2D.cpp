@@ -10,7 +10,10 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+
 #define GRAV_CONST 0.009
+#define FRIC_CONST 0.98
+#define REST_CONST 0.7
 
 using namespace std;
 
@@ -54,11 +57,21 @@ Character Bird;
 class Wall {
 public:
   float x, y;
+  float size_x, size_y;
   VAO *sprite;
 };
 
-Wall Floor[1];
-int FloorCount=1;
+class Weapon {
+public:
+  float x,y;
+  float angle;
+  VAO *base;
+  VAO *barrel;
+};
+
+Weapon Cannon;
+
+Wall Floor;
 
 float clamp(float value, float min, float max) {
   return std::max(min, std::min(max, value));
@@ -66,12 +79,11 @@ float clamp(float value, float min, float max) {
 
 void CheckFloorCollision()
 {
-  for (int i=0; i<FloorCount; i++) {
 	// Get center point circle first
 	glm::vec2 center(Bird.x, Bird.y);
 	// Calculate AABB info (center, half-extents)
-	glm::vec2 aabb_half_extents(4, 0.5);
-	glm::vec2 aabb_center(Floor[0].x, Floor[0].y);
+	glm::vec2 aabb_half_extents(Floor.size_x, Floor.size_y);
+	glm::vec2 aabb_center(Floor.x, Floor.y);
 	// Get difference vector between both centers
 	glm::vec2 difference = center - aabb_center;
 	glm::vec2 clamped = glm::clamp(difference, -aabb_half_extents, aabb_half_extents);
@@ -80,15 +92,15 @@ void CheckFloorCollision()
 	// Retrieve vector between center circle and closest point AABB and check if length <= radius
 	difference = closest - center;
 
-	if (glm::length(difference) < Bird.radius){
-	  // if(abs(Bird.vel_y) < 0.00005)
-	  //   Bird.vel_y = 0;
-	  // else
-	  cout<<"True"<<endl;
-	  if (Bird.vel_y < 0)
-		Bird.vel_y = 0.5*abs(Bird.vel_y);
-	}
+	// GLfloat dot_product = glm::dot(glm::normalize(closest), glm::vec2(0,-1));
 
+	if (glm::length(difference) < Bird.radius){
+	  Bird.vel_x *= FRIC_CONST;
+	  if (Bird.vel_y < 0)
+		Bird.vel_y = REST_CONST*abs(Bird.vel_y);
+	  if(abs(Bird.vel_y) < 0.02) {
+	    Bird.vel_y = 0;
+	}
   }
 }
 
@@ -313,6 +325,10 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
   }
 }
 
+void fire_bird() {
+
+}
+
 /* Executed for character input (like in text boxes) */
 void keyboardChar (GLFWwindow* window, unsigned int key)
 {
@@ -322,13 +338,21 @@ void keyboardChar (GLFWwindow* window, unsigned int key)
 	quit(window);
 	break;
   case 'a':
-	Bird.vel_x -= 0.1;
+	Cannon.angle += 2;
+	// Bird.vel_x -= 0.1;
+	break;
+  case 'b':
+	Cannon.angle -= 2;
 	break;
   case 'd':
-	Bird.vel_x += 0.1;
+	// Bird.vel_x += 0.1;
 	break;
   case 'w':
-	Bird.vel_y += 0.1;
+	// Bird.vel_y += 0.1;
+	fire_bird();
+	break;
+  case 's':
+	// Bird.vel_x = 0;
 	break;
   default:
 	break;
@@ -434,9 +458,11 @@ void createRectangle ()
 
 void createFloor ()
 {
+  Floor.x = 0;
+  Floor.y = -3.5;
+  Floor.size_x = 4;
+  Floor.size_y = 0.5;
 
-  Floor[0].x = 0;
-  Floor[0].y = -3.5;
   // GL3 accepts only Triangles. Quads are not supported
   static const GLfloat vertex_buffer_data [] = {
 	-4,-4,0, // vertex 1
@@ -459,14 +485,14 @@ void createFloor ()
   };
 
   // create3DObject creates and returns a handle to a VAO that can be used later
-  Floor[0].sprite = create3DObject(GL_TRIANGLES, 6, vertex_buffer_data, color_buffer_data, GL_FILL);
+  Floor.sprite = create3DObject(GL_TRIANGLES, 6, vertex_buffer_data, color_buffer_data, GL_FILL);
 }
 
 void createBird ()
 {
   Bird.x = 0;
   Bird.y = 0;
-  Bird.radius = 0.5;
+  Bird.radius = 0.25;
   Bird.touch_radius = Bird.radius += 0.01;
   Bird.vel_x = 0;
   Bird.vel_y = 0;
@@ -500,6 +526,48 @@ void createBird ()
 
   // create3DObject creates and returns a handle to a VAO that can be used later
   Bird.sprite = create3DObject(GL_TRIANGLE_FAN, 362, vertex_buffer_data, color_buffer_data, GL_FILL);
+}
+
+void createCannon()
+{
+  Cannon.x = -3.5;
+  Cannon.y = -2;
+  Cannon.angle = 0;
+  const GLfloat vertex_buffer_data [] = {
+	0, 0.55,0, // vertex 0
+	-0.55,-1,0, // vertex 1
+	0.55,-1,0, // vertex 2
+  };
+  const GLfloat color_buffer_data [] = {
+	0,0,0, // color 0
+	0,0,0, // color 1
+	0,0,0, // color 2
+  };
+  Cannon.base = create3DObject(GL_TRIANGLES, 3, vertex_buffer_data, color_buffer_data, GL_FILL);
+
+  static const GLfloat vertex_barrel_data [] = {
+	-0.75,-0.25,0, // vertex 1
+	0.75,-0.25,0, // vertex 2
+	0.75, 0.25,0, // vertex 3
+
+	0.75, 0.25,0, // vertex 3
+	-0.75, 0.25,0, // vertex 4
+	-0.75,-0.25,0  // vertex 1
+  };
+
+  static const GLfloat color_barrel_data [] = {
+	1,0,0, // color 1
+	1,0,0, // color 2
+	1,0,0, // color 3
+
+	1,0,0, // color 3
+	1,0,0, // color 4
+	1,0,0  // color 1
+  };
+
+  Cannon.barrel = create3DObject(GL_TRIANGLES, 6, vertex_barrel_data, color_barrel_data, GL_FILL);
+
+
 }
 
 float camera_rotation_angle = 90;
@@ -570,20 +638,30 @@ void draw ()
 
   //####################################################################################################
 
-  Matrices.model = glm::mat4(1.0f);
-  MVP = VP * Matrices.model;
+
+  MVP = VP;
   glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
   // draw3DObject draws the VAO given to it using current MVP matrix
-  draw3DObject(Floor[0].sprite);
+  draw3DObject(Floor.sprite);
 
-  Matrices.model = glm::mat4(1.0f);
-  glm::mat4 translateBird = glm::translate (glm::vec3(Bird.x, Bird.y, 0));        // glTranslatef
-  glm::mat4 rotateBird = glm::rotate((float)(rectangle_rotation*M_PI/180.0f), glm::vec3(0,0,1)); // rotate about vector (-1,1,1)
-  Matrices.model *= translateBird;
-  MVP = VP * Matrices.model;
+  MVP = VP * glm::translate (glm::vec3(Bird.x, Bird.y, 0));
   glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
   // draw3DObject draws the VAO given to it using current MVP matrix
   draw3DObject(Bird.sprite);
+
+  MVP = VP * glm::translate (glm::vec3(Cannon.x, Cannon.y, 0));
+  glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+  // draw3DObject draws the VAO given to it using current MVP matrix
+  draw3DObject(Cannon.base);
+
+  Matrices.model = glm::mat4(1.0f);
+  glm::mat4 translateBarrel = glm::translate (glm::vec3(Cannon.x, Cannon.y, 0));
+  glm::mat4 rotateBarrel = glm::rotate((float)(Cannon.angle*M_PI/180.0f), glm::vec3(0,0,1));
+  Matrices.model *= translateBarrel * rotateBarrel;
+  MVP = VP * Matrices.model;
+  glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+  // draw3DObject draws the VAO given to it using current MVP matrix
+  draw3DObject(Cannon.barrel);
 
   //####################################################################################################
 
@@ -653,6 +731,7 @@ void initGL (GLFWwindow* window, int width, int height)
   createRectangle ();
   createFloor ();
   createBird ();
+  createCannon ();
 
   // Create and compile our GLSL program from the shaders
   programID = LoadShaders( "Sample_GL.vert", "Sample_GL.frag" );
