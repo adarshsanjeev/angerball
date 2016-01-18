@@ -12,8 +12,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #define GRAV_CONST 0.009
-#define FRIC_CONST 0.98
+#define FRIC_CONST 0.96
 #define REST_CONST 0.7
+#define FAIR_CONST 0.99
 
 using namespace std;
 
@@ -103,6 +104,10 @@ void CheckFloorCollision()
 	    Bird.vel_y = 0;
 	}
   }
+	else {
+	  Bird.vel_x *= FAIR_CONST;
+	  Bird.vel_y *= FAIR_CONST;
+	}
 }
 
 void gravity() {
@@ -355,10 +360,12 @@ void keyboardChar (GLFWwindow* window, unsigned int key)
 	break;
   case 'a':
 	Cannon.angle += 2;
+	Cannon.angle = Cannon.angle>90? 90:Cannon.angle;
 	// Bird.vel_x -= 0.1;
 	break;
   case 'b':
 	Cannon.angle -= 2;
+	Cannon.angle = Cannon.angle<-90? -90:Cannon.angle;
 	break;
   case 'd':
 	// Bird.vel_x += 0.1;
@@ -655,21 +662,20 @@ void draw ()
 
   //####################################################################################################
 
-
   MVP = VP;
   glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
   // draw3DObject draws the VAO given to it using current MVP matrix
   draw3DObject(Floor.sprite);
 
-  MVP = VP * glm::translate (glm::vec3(Bird.x, Bird.y, 0));
-  glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
-  // draw3DObject draws the VAO given to it using current MVP matrix
-  draw3DObject(Bird.sprite);
-
   MVP = VP * glm::translate (glm::vec3(Cannon.x, Cannon.y, 0));
   glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
   // draw3DObject draws the VAO given to it using current MVP matrix
   draw3DObject(Cannon.base);
+
+  MVP = VP * glm::translate (glm::vec3(Bird.x, Bird.y, 0));
+  glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+  // draw3DObject draws the VAO given to it using current MVP matrix
+  draw3DObject(Bird.sprite);
 
   Matrices.model = glm::mat4(1.0f);
   glm::mat4 translateBarrel = glm::translate (glm::vec3(Cannon.x, Cannon.y, 0));
