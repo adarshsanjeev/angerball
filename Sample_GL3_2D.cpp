@@ -65,6 +65,7 @@ class Weapon {
 public:
   float x,y;
   float angle;
+  float power;
   VAO *base;
   VAO *barrel;
 };
@@ -293,6 +294,14 @@ float rectangle_rot_dir = 1;
 bool triangle_rot_status = true;
 bool rectangle_rot_status = true;
 
+void fire_bird() {
+  Bird.x = Cannon.x;
+  Bird.y = Cannon.y;
+
+  Bird.vel_x = Cannon.power * 0.2 * cos((Cannon.angle*M_PI)/180);
+  Bird.vel_y = Cannon.power * 0.2 * sin((Cannon.angle*M_PI)/180);
+}
+
 /* Executed when a regular key is pressed/released/held-down */
 /* Prefered for Keyboard events */
 void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -307,8 +316,8 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
 	case GLFW_KEY_P:
 	  triangle_rot_status = !triangle_rot_status;
 	  break;
-	case GLFW_KEY_X:
-	  // do something ..
+	case GLFW_KEY_SPACE:
+	  fire_bird();
 	  break;
 	default:
 	  break;
@@ -319,14 +328,21 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
 	case GLFW_KEY_ESCAPE:
 	  quit(window);
 	  break;
+	case GLFW_KEY_SPACE:
+	  Cannon.power = 1;
+	  break;
 	default:
 	  break;
 	}
   }
-}
-
-void fire_bird() {
-
+  else if (action == GLFW_REPEAT) {
+	switch (key) {
+	case GLFW_KEY_SPACE:
+	  Cannon.power += 0.1;
+	  Cannon.power = Cannon.power<3 ? Cannon.power:3;
+	  break;
+	}
+  }
 }
 
 /* Executed for character input (like in text boxes) */
@@ -533,6 +549,7 @@ void createCannon()
   Cannon.x = -3.5;
   Cannon.y = -2;
   Cannon.angle = 0;
+  Cannon.power = 1;
   const GLfloat vertex_buffer_data [] = {
 	0, 0.55,0, // vertex 0
 	-0.55,-1,0, // vertex 1
