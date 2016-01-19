@@ -12,9 +12,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #define GRAV_CONST 0.009
-#define FRIC_CONST 0.96
-#define REST_CONST 0.7
-#define FAIR_CONST 0.99
+#define MAX_POWER 2.5
+#define VEL_THRE 0.02
 
 using namespace std;
 
@@ -47,10 +46,13 @@ public:
   float touch_radius;
   float angle;
   float vel_x, vel_y;
-  VAO *sprite;
-  void fall() {
 
-  }
+  float fric_const;
+  float elast_const;
+  float rest_const;
+  float air_const;
+
+  VAO *sprite;
 };
 
 Character Bird;
@@ -94,19 +96,17 @@ void CheckFloorCollision()
 	// Retrieve vector between center circle and closest point AABB and check if length <= radius
 	difference = closest - center;
 
-	// GLfloat dot_product = glm::dot(glm::normalize(closest), glm::vec2(0,-1));
-
 	if (glm::length(difference) < Bird.radius){
-	  Bird.vel_x *= FRIC_CONST;
+	  Bird.vel_x *= Bird.fric_const;
 	  if (Bird.vel_y < 0)
-		Bird.vel_y = REST_CONST*abs(Bird.vel_y);
-	  if(abs(Bird.vel_y) < 0.02) {
+		Bird.vel_y = Bird.rest_const*abs(Bird.vel_y);
+	  if(abs(Bird.vel_y) < VEL_THRE) {
 	    Bird.vel_y = 0;
 	}
   }
 	else {
-	  Bird.vel_x *= FAIR_CONST;
-	  Bird.vel_y *= FAIR_CONST;
+	  Bird.vel_x *= Bird.air_const;
+	  Bird.vel_y *= Bird.air_const;
 	}
 }
 
@@ -300,9 +300,8 @@ bool triangle_rot_status = true;
 bool rectangle_rot_status = true;
 
 void fire_bird() {
-  Bird.x = Cannon.x;
+  Bird.x = Cannon.x-0.5;// + 0.1*sin((Cannon.angle*M_PI)/180);
   Bird.y = Cannon.y;
-
   Bird.vel_x = Cannon.power * 0.2 * cos((Cannon.angle*M_PI)/180);
   Bird.vel_y = Cannon.power * 0.2 * sin((Cannon.angle*M_PI)/180);
 }
@@ -334,7 +333,7 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
 	  quit(window);
 	  break;
 	case GLFW_KEY_SPACE:
-	  Cannon.power = 1;
+	  Cannon.power = 0.5;
 	  break;
 	default:
 	  break;
@@ -344,7 +343,7 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
 	switch (key) {
 	case GLFW_KEY_SPACE:
 	  Cannon.power += 0.1;
-	  Cannon.power = Cannon.power<3 ? Cannon.power:3;
+	  Cannon.power = Cannon.power<MAX_POWER ? Cannon.power:MAX_POWER;
 	  break;
 	}
   }
@@ -361,21 +360,10 @@ void keyboardChar (GLFWwindow* window, unsigned int key)
   case 'a':
 	Cannon.angle += 2;
 	Cannon.angle = Cannon.angle>90? 90:Cannon.angle;
-	// Bird.vel_x -= 0.1;
-	break;
-  case 'b':
-	Cannon.angle -= 2;
-	Cannon.angle = Cannon.angle<-90? -90:Cannon.angle;
 	break;
   case 'd':
-	// Bird.vel_x += 0.1;
-	break;
-  case 'w':
-	// Bird.vel_y += 0.1;
-	fire_bird();
-	break;
-  case 's':
-	// Bird.vel_x = 0;
+	Cannon.angle -= 2;
+	Cannon.angle = Cannon.angle<-90? -90:Cannon.angle;
 	break;
   default:
 	break;
@@ -515,10 +503,14 @@ void createBird ()
 {
   Bird.x = 0;
   Bird.y = 0;
-  Bird.radius = 0.25;
+  Bird.radius = 0.2;
   Bird.touch_radius = Bird.radius += 0.01;
   Bird.vel_x = 0;
   Bird.vel_y = 0;
+
+  Bird.fric_const = 0.96;
+  Bird.rest_const = 0.7;
+  Bird.air_const = 0.99;
 
   static GLfloat vertex_buffer_data [3*365];
   static GLfloat color_buffer_data [3*365];
@@ -554,13 +546,13 @@ void createBird ()
 void createCannon()
 {
   Cannon.x = -3.5;
-  Cannon.y = -2;
+  Cannon.y = -2.7;
   Cannon.angle = 0;
   Cannon.power = 1;
   const GLfloat vertex_buffer_data [] = {
-	0, 0.55,0, // vertex 0
-	-0.55,-1,0, // vertex 1
-	0.55,-1,0, // vertex 2
+	0, 0.35,0, // vertex 0
+	-0.35,-0.3,0, // vertex 1
+	0.35,-0.3,0, // vertex 2
   };
   const GLfloat color_buffer_data [] = {
 	0,0,0, // color 0
@@ -570,13 +562,13 @@ void createCannon()
   Cannon.base = create3DObject(GL_TRIANGLES, 3, vertex_buffer_data, color_buffer_data, GL_FILL);
 
   static const GLfloat vertex_barrel_data [] = {
-	-0.75,-0.25,0, // vertex 1
-	0.75,-0.25,0, // vertex 2
-	0.75, 0.25,0, // vertex 3
+	-0.5,-0.15,0, // vertex 1
+	0.5,-0.15,0, // vertex 2
+	0.5, 0.15,0, // vertex 3
 
-	0.75, 0.25,0, // vertex 3
-	-0.75, 0.25,0, // vertex 4
-	-0.75,-0.25,0  // vertex 1
+	0.5, 0.15,0, // vertex 3
+	-0.5, 0.15,0, // vertex 4
+	-0.5,-0.15,0  // vertex 1
   };
 
   static const GLfloat color_barrel_data [] = {
@@ -673,6 +665,8 @@ void draw ()
   draw3DObject(Cannon.base);
 
   MVP = VP * glm::translate (glm::vec3(Bird.x, Bird.y, 0));
+  MVP = glm::translate (glm::vec3(0.14, 0, 0)) * MVP;
+
   glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
   // draw3DObject draws the VAO given to it using current MVP matrix
   draw3DObject(Bird.sprite);
@@ -712,7 +706,7 @@ GLFWwindow* initGLFW (int width, int height)
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-  window = glfwCreateWindow(width, height, "Sample OpenGL 3.3 Application", NULL, NULL);
+  window = glfwCreateWindow(width, height, "Anger Bird", NULL, NULL);
 
   if (!window) {
 	glfwTerminate();
