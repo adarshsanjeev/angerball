@@ -43,8 +43,6 @@ class Character {
 public:
   float x, y;
   float radius;
-  float touch_radius;
-  float angle;
   float vel_x, vel_y;
 
   float fric_const;
@@ -53,16 +51,14 @@ public:
   float air_const;
 
   VAO *sprite;
-};
-
-Character Bird;
+} Bird;
 
 class Wall {
 public:
   float x, y;
   float size_x, size_y;
   VAO *sprite;
-};
+} Floor;
 
 class Bar {
 public:
@@ -70,9 +66,7 @@ public:
   float size;
 
   VAO * sprite;
-};
-
-Bar PowerBar;
+} PowerBar;
 
 class Weapon {
 public:
@@ -81,11 +75,21 @@ public:
   float power;
   VAO *base;
   VAO *barrel;
-};
+} Cannon;
 
-Weapon Cannon;
+class Enemy {
+public:
+  float x,y;
+  float radius;
+  float vel_x, vel_y;
 
-Wall Floor;
+  float fric_const;
+  float elast_const;
+  float rest_const;
+  float air_const;
+
+  VAO *sprite;
+} Enemies[3];
 
 float clamp(float value, float min, float max) {
   return std::max(min, std::min(max, value));
@@ -93,17 +97,12 @@ float clamp(float value, float min, float max) {
 
 void CheckFloorCollision()
 {
-	// Get center point circle first
 	glm::vec2 center(Bird.x, Bird.y);
-	// Calculate AABB info (center, half-extents)
 	glm::vec2 aabb_half_extents(Floor.size_x, Floor.size_y);
 	glm::vec2 aabb_center(Floor.x, Floor.y);
-	// Get difference vector between both centers
 	glm::vec2 difference = center - aabb_center;
 	glm::vec2 clamped = glm::clamp(difference, -aabb_half_extents, aabb_half_extents);
-	// Add clamped value to AABB_center and we get the value of box closest to circle
 	glm::vec2 closest = aabb_center + clamped;
-	// Retrieve vector between center circle and closest point AABB and check if length <= radius
 	difference = closest - center;
 
 	if (glm::length(difference) < Bird.radius){
@@ -120,16 +119,63 @@ void CheckFloorCollision()
 	}
 }
 
+void CheckEnemyIsKill()
+{
+  glm::vec2 player(Bird.x, Bird.y);
+
+  for(int i=0; i<3; i++) {
+
+	glm::vec2 enemy(Enemies[i].x, Enemies[i].y);
+	glm::vec2 difference = player - enemy;
+
+	if (glm::length(difference) <= Bird.radius + Enemies[i].radius)
+	  cout<<"TRUE"<<endl;
+  }
+}
+
+void CheckEnemyFloor()
+{
+  for (int i=0; i<3; i++) {
+	glm::vec2 center(Enemies[i].x, Enemies[i].y);
+	glm::vec2 aabb_half_extents(Floor.size_x, Floor.size_y);
+	glm::vec2 aabb_center(Floor.x, Floor.y);
+	glm::vec2 difference = center - aabb_center;
+	glm::vec2 clamped = glm::clamp(difference, -aabb_half_extents, aabb_half_extents);
+	glm::vec2 closest = aabb_center + clamped;
+	difference = closest - center;
+
+	if (glm::length(difference) < Enemies[i].radius){
+	  Enemies[i].vel_x *= Enemies[i].fric_const;
+	  if (Enemies[i].vel_y < 0)
+		Enemies[i].vel_y = Enemies[i].rest_const*abs(Enemies[i].vel_y);
+	  if(abs(Enemies[i].vel_y) < VEL_THRE) {
+	    Enemies[i].vel_y = 0;
+	}
+  }
+	else {
+	  Enemies[i].vel_x *= Enemies[i].air_const;
+	  Enemies[i].vel_y *= Enemies[i].air_const;
+	}
+  }
+}
+
 void gravity() {
-  // ACC -> VEL
 
   Bird.vel_y -= GRAV_CONST;
-  // VEL -> POS
+  for (int i=0; i<3; i++)
+	Enemies[i].vel_y -= GRAV_CONST;
 
   CheckFloorCollision();
+  CheckEnemyFloor();
+  CheckEnemyIsKill();
 
   Bird.x += Bird.vel_x;
   Bird.y += Bird.vel_y;
+  for (int i=0; i<3; i++) {
+	Enemies[i].x += Enemies[i].vel_x;
+	Enemies[i].y += Enemies[i].vel_y;
+  }
+
 }
 
 //####################################################################################################
@@ -478,6 +524,51 @@ void createRectangle ()
   rectangle = create3DObject(GL_TRIANGLES, 6, vertex_buffer_data, color_buffer_data, GL_FILL);
 }
 
+void createEnemies ()
+{
+  for (int i=0; i<3 ;i++) {
+	Enemies[i].x = i;
+	Enemies[i].y = 0;
+	Enemies[i].radius = 0.2;
+	Enemies[i].vel_x = 0;
+	Enemies[i].vel_y = 0;
+
+	Enemies[i].fric_const = 0.96;
+	Enemies[i].rest_const = 0.5;
+	Enemies[i].air_const = 0.95;
+
+	GLfloat vertex_buffer_data [3*365];
+	GLfloat color_buffer_data [3*365];
+
+	int k = 0;
+	vertex_buffer_data[0] = 0;
+	color_buffer_data[0] = 1;
+	k++;
+	vertex_buffer_data[1] = 0;
+	color_buffer_data[1] = 1;
+	k++;
+	color_buffer_data[2] = 1;
+	vertex_buffer_data[2] = 0;
+	k++;
+
+	for (int i=0; i<=360; ++i)
+	  {
+		vertex_buffer_data[k] = cos((i*M_PI)/180)*Bird.radius;
+		color_buffer_data[k] = 0;
+		k++;
+		vertex_buffer_data[k] = sin((i*M_PI)/180)*Bird.radius;
+		color_buffer_data[k] = 0.5;
+		k++;
+		vertex_buffer_data[k] = 0;
+		color_buffer_data[k] = 0;
+		k++;
+	  }
+
+	// create3DObject creates and returns a handle to a VAO that can be used later
+	Enemies[i].sprite = create3DObject(GL_TRIANGLE_FAN, 362, vertex_buffer_data, color_buffer_data, GL_FILL);
+  }
+}
+
 void createFloor ()
 {
   Floor.x = 0;
@@ -515,7 +606,6 @@ void createBird ()
   Bird.x = 0;
   Bird.y = 0;
   Bird.radius = 0.2;
-  Bird.touch_radius = Bird.radius += 0.01;
   Bird.vel_x = 0;
   Bird.vel_y = 0;
 
@@ -559,7 +649,7 @@ void createCannon()
   Cannon.x = -3.5;
   Cannon.y = -2.7;
   Cannon.angle = 0;
-  Cannon.power = 1;
+  Cannon.power = 0;
 
   const GLfloat vertex_buffer_data [] = {
 	0, 0.35,0, // vertex 0
@@ -723,6 +813,12 @@ void draw ()
   // draw3DObject draws the VAO given to it using current MVP matrix
   draw3DObject(PowerBar.sprite);
 
+  for(int i=0; i<3; i++) {
+	MVP = VP * glm::translate (glm::vec3(Enemies[i].x, Enemies[i].y, 0));
+	glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+	draw3DObject(Enemies[i].sprite);
+  }
+
   //####################################################################################################
 
   // Increment angles
@@ -793,6 +889,7 @@ void initGL (GLFWwindow* window, int width, int height)
   createBird ();
   createCannon ();
   createTehPower ();
+  createEnemies();
 
   // Create and compile our GLSL program from the shaders
   programID = LoadShaders( "Sample_GL.vert", "Sample_GL.frag" );
