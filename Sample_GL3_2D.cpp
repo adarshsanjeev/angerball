@@ -64,6 +64,16 @@ public:
   VAO *sprite;
 };
 
+class Bar {
+public:
+  float x,y;
+  float size;
+
+  VAO * sprite;
+};
+
+Bar PowerBar;
+
 class Weapon {
 public:
   float x,y;
@@ -322,6 +332,7 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
 	  break;
 	case GLFW_KEY_SPACE:
 	  fire_bird();
+	  Cannon.power = 0;
 	  break;
 	default:
 	  break;
@@ -333,7 +344,7 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
 	  quit(window);
 	  break;
 	case GLFW_KEY_SPACE:
-	  Cannon.power = 0.5;
+	  Cannon.power = 0.1;
 	  break;
 	default:
 	  break;
@@ -549,6 +560,7 @@ void createCannon()
   Cannon.y = -2.7;
   Cannon.angle = 0;
   Cannon.power = 1;
+
   const GLfloat vertex_buffer_data [] = {
 	0, 0.35,0, // vertex 0
 	-0.35,-0.3,0, // vertex 1
@@ -583,6 +595,33 @@ void createCannon()
 
   Cannon.barrel = create3DObject(GL_TRIANGLES, 6, vertex_barrel_data, color_barrel_data, GL_FILL);
 
+
+}
+
+void createTehPower () {
+  PowerBar.x = 0;
+  PowerBar.y = 3.5;
+
+  static const GLfloat vertex_buffer_data [] = {
+	-0.5,-0.15,0, // vertex 1
+	0.5,-0.15,0, // vertex 2
+	0.5, 0.15,0, // vertex 3
+
+	0.5, 0.15,0, // vertex 3
+	-0.5, 0.15,0, // vertex 4
+	-0.5,-0.15,0  // vertex 1
+  };
+
+  static const GLfloat color_buffer_data [] = {
+	1,0.5,0, // color 1
+	1,0.5,0, // color 2
+	1,0.5,0, // color 3
+
+	1,0.5,0, // color 3
+	1,0.5,0, // color 4
+	1,0.5,0  // color 1
+  };
+  PowerBar.sprite = create3DObject(GL_TRIANGLES, 6, vertex_buffer_data, color_buffer_data, GL_FILL);
 
 }
 
@@ -666,7 +705,6 @@ void draw ()
 
   MVP = VP * glm::translate (glm::vec3(Bird.x, Bird.y, 0));
   MVP = glm::translate (glm::vec3(0.14, 0, 0)) * MVP;
-
   glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
   // draw3DObject draws the VAO given to it using current MVP matrix
   draw3DObject(Bird.sprite);
@@ -679,6 +717,11 @@ void draw ()
   glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
   // draw3DObject draws the VAO given to it using current MVP matrix
   draw3DObject(Cannon.barrel);
+
+  MVP = VP * glm::translate (glm::vec3(PowerBar.x, PowerBar.y, 0)) * glm::scale(glm::vec3(Cannon.power, 1.0f, 1.0f));
+  glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+  // draw3DObject draws the VAO given to it using current MVP matrix
+  draw3DObject(PowerBar.sprite);
 
   //####################################################################################################
 
@@ -749,6 +792,7 @@ void initGL (GLFWwindow* window, int width, int height)
   createFloor ();
   createBird ();
   createCannon ();
+  createTehPower ();
 
   // Create and compile our GLSL program from the shaders
   programID = LoadShaders( "Sample_GL.vert", "Sample_GL.frag" );
