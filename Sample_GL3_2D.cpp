@@ -88,6 +88,8 @@ public:
   float rest_const;
   float air_const;
 
+  bool alive;
+
   VAO *sprite;
 } Enemies[3];
 
@@ -128,8 +130,9 @@ void CheckEnemyIsKill()
 	glm::vec2 enemy(Enemies[i].x, Enemies[i].y);
 	glm::vec2 difference = player - enemy;
 
-	if (glm::length(difference) <= Bird.radius + Enemies[i].radius)
-	  cout<<"TRUE"<<endl;
+	if (glm::length(difference) <= 0.4) {
+	  Enemies[i].alive = 0;
+	}
   }
 }
 
@@ -532,7 +535,7 @@ void createEnemies ()
 	Enemies[i].radius = 0.2;
 	Enemies[i].vel_x = 0;
 	Enemies[i].vel_y = 0;
-
+	Enemies[i].alive = 1;
 	Enemies[i].fric_const = 0.96;
 	Enemies[i].rest_const = 0.5;
 	Enemies[i].air_const = 0.95;
@@ -814,6 +817,8 @@ void draw ()
   draw3DObject(PowerBar.sprite);
 
   for(int i=0; i<3; i++) {
+	if (!Enemies[i].alive)
+	  continue;
 	MVP = VP * glm::translate (glm::vec3(Enemies[i].x, Enemies[i].y, 0));
 	glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
 	draw3DObject(Enemies[i].sprite);
