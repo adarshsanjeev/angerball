@@ -140,10 +140,26 @@ void CheckEnemyIsKill()
 	  // int v_per = Bird.vel_y*cos(angle) + Bird.vel_x*sin(angle);
 	  // Bird.vel_x = v_tan*cos(angle) + v_per*sin(angle);
 	  // Bird.vel_y = v_tan*sin(angle) + v_per*cos(angle);
-	  Enemies[i].vel_x = 0.5*Bird.vel_x;
-	  Enemies[i].vel_y = 0.5*Bird.vel_y;
-	  Bird.vel_x *= -0.5;
-	  Bird.vel_y *= -0.5;
+	  float total_x = Bird.vel_x + Enemies[i].vel_x;
+	  float total_y = Bird.vel_y + Enemies[i].vel_y;
+	  if (Bird.y < Enemies[i].y) {
+		total_y *= -1;
+		total_x *= -1;
+	  }
+	  if(!total_y) {
+		total_y = 0.2;
+		if(rand()%2)
+		  total_y *= -1;
+	  }
+	  if(!total_x) {
+		total_x = 0.2;
+		if(rand()%2)
+		  total_x *= -1;
+	  }
+	  Enemies[i].vel_x = 0.5*total_x;
+	  Enemies[i].vel_y = 0.5*total_y;
+	  Bird.vel_x = -0.5*total_x;
+	  Bird.vel_y = -0.5*total_y;
 
 	  // Enemies[i].alive = 0;
 	}
