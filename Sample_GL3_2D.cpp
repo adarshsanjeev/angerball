@@ -14,6 +14,7 @@
 #define GRAV_CONST 0.009
 #define MAX_POWER 2.5
 #define VEL_THRE 0.02
+#define ENEMY_NUMBER 1
 
 using namespace std;
 
@@ -91,7 +92,7 @@ public:
   bool alive;
 
   VAO *sprite;
-} Enemies[3];
+} Enemies[ENEMY_NUMBER];
 
 float clamp(float value, float min, float max) {
   return std::max(min, std::min(max, value));
@@ -125,20 +126,33 @@ void CheckEnemyIsKill()
 {
   glm::vec2 player(Bird.x, Bird.y);
 
-  for(int i=0; i<3; i++) {
+  for(int i=0; i<ENEMY_NUMBER; i++) {
 
 	glm::vec2 enemy(Enemies[i].x, Enemies[i].y);
-	glm::vec2 difference = player - enemy;
+	glm::vec2 difference = enemy - player;
 
-	if (glm::length(difference) <= 0.4) {
-	  Enemies[i].alive = 0;
+	if (glm::length(difference) <= (Bird.radius + Enemies[i].radius)) {
+	  int angle = acos(dot(glm::normalize(difference), glm::normalize(glm::vec2(1,0))));
+	  // angle = (angle/M_PI)*180;
+	  if (Bird.y > Enemies[i].y)
+	  	angle *= -1;
+	  // int v_tan = Bird.vel_x*cos(angle) + Bird.vel_y*sin(angle);
+	  // int v_per = Bird.vel_y*cos(angle) + Bird.vel_x*sin(angle);
+	  // Bird.vel_x = v_tan*cos(angle) + v_per*sin(angle);
+	  // Bird.vel_y = v_tan*sin(angle) + v_per*cos(angle);
+	  Enemies[i].vel_x = 0.5*Bird.vel_x;
+	  Enemies[i].vel_y = 0.5*Bird.vel_y;
+	  Bird.vel_x *= -0.5;
+	  Bird.vel_y *= -0.5;
+
+	  // Enemies[i].alive = 0;
 	}
   }
 }
 
 void CheckEnemyFloor()
 {
-  for (int i=0; i<3; i++) {
+  for (int i=0; i<ENEMY_NUMBER; i++) {
 	glm::vec2 center(Enemies[i].x, Enemies[i].y);
 	glm::vec2 aabb_half_extents(Floor.size_x, Floor.size_y);
 	glm::vec2 aabb_center(Floor.x, Floor.y);
@@ -165,7 +179,7 @@ void CheckEnemyFloor()
 void gravity() {
 
   Bird.vel_y -= GRAV_CONST;
-  for (int i=0; i<3; i++)
+  for (int i=0; i<ENEMY_NUMBER; i++)
 	Enemies[i].vel_y -= GRAV_CONST;
 
   CheckFloorCollision();
@@ -174,7 +188,7 @@ void gravity() {
 
   Bird.x += Bird.vel_x;
   Bird.y += Bird.vel_y;
-  for (int i=0; i<3; i++) {
+  for (int i=0; i<ENEMY_NUMBER; i++) {
 	Enemies[i].x += Enemies[i].vel_x;
 	Enemies[i].y += Enemies[i].vel_y;
   }
@@ -417,13 +431,37 @@ void keyboardChar (GLFWwindow* window, unsigned int key)
   case 'q':
 	quit(window);
 	break;
-  case 'a':
+  case 'e':
 	Cannon.angle += 2;
 	Cannon.angle = Cannon.angle>90? 90:Cannon.angle;
 	break;
-  case 'd':
+  case 'r':
 	Cannon.angle -= 2;
 	Cannon.angle = Cannon.angle<-90? -90:Cannon.angle;
+	break;
+  case 'i':
+	Enemies[0].y += 1;
+	break;
+  case 'k':
+	Enemies[0].y -= 1;
+	break;
+  case 'j':
+	Enemies[0].x -= 1;
+	break;
+  case 'l':
+	Enemies[0].x += 1;
+	break;
+  case 'w':
+	Bird.y += 1;
+	break;
+  case 's':
+	Bird.y -= 1;
+	break;
+  case 'a':
+	Bird.x -= 1;
+	break;
+  case 'd':
+	Bird.x += 1;
 	break;
   default:
 	break;
@@ -529,7 +567,7 @@ void createRectangle ()
 
 void createEnemies ()
 {
-  for (int i=0; i<3 ;i++) {
+  for (int i=0; i<ENEMY_NUMBER ;i++) {
 	Enemies[i].x = i;
 	Enemies[i].y = 0;
 	Enemies[i].radius = 0.2;
@@ -537,7 +575,7 @@ void createEnemies ()
 	Enemies[i].vel_y = 0;
 	Enemies[i].alive = 1;
 	Enemies[i].fric_const = 0.96;
-	Enemies[i].rest_const = 0.5;
+	Enemies[i].rest_const = 0.7;
 	Enemies[i].air_const = 0.95;
 
 	GLfloat vertex_buffer_data [3*365];
@@ -606,7 +644,7 @@ void createFloor ()
 
 void createBird ()
 {
-  Bird.x = 0;
+  Bird.x = -2;
   Bird.y = 0;
   Bird.radius = 0.2;
   Bird.vel_x = 0;
@@ -797,7 +835,6 @@ void draw ()
   draw3DObject(Cannon.base);
 
   MVP = VP * glm::translate (glm::vec3(Bird.x, Bird.y, 0));
-  MVP = glm::translate (glm::vec3(0.14, 0, 0)) * MVP;
   glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
   // draw3DObject draws the VAO given to it using current MVP matrix
   draw3DObject(Bird.sprite);
@@ -816,7 +853,7 @@ void draw ()
   // draw3DObject draws the VAO given to it using current MVP matrix
   draw3DObject(PowerBar.sprite);
 
-  for(int i=0; i<3; i++) {
+  for(int i=0; i<ENEMY_NUMBER; i++) {
 	if (!Enemies[i].alive)
 	  continue;
 	MVP = VP * glm::translate (glm::vec3(Enemies[i].x, Enemies[i].y, 0));
