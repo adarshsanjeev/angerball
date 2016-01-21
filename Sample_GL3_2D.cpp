@@ -14,7 +14,7 @@
 #define GRAV_CONST 0.009
 #define MAX_POWER 2.5
 #define VEL_THRE 0.02
-#define ENEMY_NUMBER 1
+#define ENEMY_NUMBER 5
 
 using namespace std;
 
@@ -59,7 +59,7 @@ public:
   float x, y;
   float size_x, size_y;
   VAO *sprite;
-} Floor;
+} Floor, CWall;
 
 class Bar {
 public:
@@ -626,6 +626,38 @@ void createEnemies ()
   }
 }
 
+void createWall ()
+{
+  CWall.x = 0;
+  CWall.y = -2;
+  CWall.size_x = 0.5;
+  CWall.size_y = 1;
+
+  // GL3 accepts only Triangles. Quads are not supported
+  static const GLfloat vertex_buffer_data [] = {
+	-0.25,-1,0, // vertex 1
+	 0.25, 1,0, // vertex 2
+	 0.25, -1,0, // vertex 3
+
+	-0.25,-1,0, // vertex 3
+	-0.25, 1,0, // vertex 4
+	 0.25, 1,0  // vertex 1
+  };
+
+  static const GLfloat color_buffer_data [] = {
+	1,1,0, // color 1
+	1,1,0, // color 2
+	1,1,0, // color 3
+
+	1,1,0, // color 3
+	1,1,0, // color 4
+	1,1,0  // color 1
+  };
+
+  // create3DObject creates and returns a handle to a VAO that can be used later
+  CWall.sprite = create3DObject(GL_TRIANGLES, 6, vertex_buffer_data, color_buffer_data, GL_FILL);
+}
+
 void createFloor ()
 {
   Floor.x = 0;
@@ -842,8 +874,11 @@ void draw ()
 
   MVP = VP;
   glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
-  // draw3DObject draws the VAO given to it using current MVP matrix
   draw3DObject(Floor.sprite);
+
+  MVP = VP * glm::translate (glm::vec3(CWall.x, CWall.y, 0));
+  glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+  draw3DObject(CWall.sprite);
 
   MVP = VP * glm::translate (glm::vec3(Cannon.x, Cannon.y, 0));
   glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
@@ -944,6 +979,7 @@ void initGL (GLFWwindow* window, int width, int height)
   createTriangle (); // Generate the VAO, VBOs, vertices data & copy into the array buffer
   createRectangle ();
   createFloor ();
+  createWall ();
   createBird ();
   createCannon ();
   createTehPower ();
