@@ -110,6 +110,12 @@ void MoveFixedColl(Wall& W, Character& C)
 
 void MovMovColl(Character& A, Character& B)
 {
+  glm::vec2 VelA(A.vel_x, A.vel_y);
+  glm::vec2 VelB(B.vel_x, B.vel_y);
+
+  if(dot(VelA, VelB) < 0)
+	return;
+
   glm::vec2 CharA(A.x, A.y);
   glm::vec2 CharB(B.x, B.y);
   glm::vec2 difference = CharB - CharA;
@@ -129,66 +135,11 @@ void MovMovColl(Character& A, Character& B)
 	  total_y *= -1;
 	  total_x *= -1;
 	}
-	if(!total_y) {
-	  total_y = 0.2;
-	  if(rand()%2)
-		total_y *= -1;
-	}
-	if(!total_x) {
-	  total_x = 0.2;
-	  if(rand()%2)
-		total_x *= -1;
-	}
 	B.vel_x = 0.5*total_x;
 	B.vel_y = 0.5*total_y;
 	A.vel_x = -0.5*total_x;
 	A.vel_y = -0.5*total_y;
-
 	// Enemies[i].alive = 0;
-  }
-}
-
-void CheckEnemyIsKill()
-{
-  glm::vec2 player(Bird.x, Bird.y);
-
-  for(int i=0; i<ENEMY_NUMBER; i++) {
-
-	glm::vec2 enemy(Enemies[i].x, Enemies[i].y);
-	glm::vec2 difference = enemy - player;
-
-	if (glm::length(difference) <= (Bird.radius + Enemies[i].radius)) {
-	  int angle = acos(dot(glm::normalize(difference), glm::normalize(glm::vec2(1,0))));
-	  // angle = (angle/M_PI)*180;
-	  if (Bird.y > Enemies[i].y)
-	  	angle *= -1;
-	  // int v_tan = Bird.vel_x*cos(angle) + Bird.vel_y*sin(angle);
-	  // int v_per = Bird.vel_y*cos(angle) + Bird.vel_x*sin(angle);
-	  // Bird.vel_x = v_tan*cos(angle) + v_per*sin(angle);
-	  // Bird.vel_y = v_tan*sin(angle) + v_per*cos(angle);
-	  float total_x = Bird.vel_x + Enemies[i].vel_x;
-	  float total_y = Bird.vel_y + Enemies[i].vel_y;
-	  if (Bird.y < Enemies[i].y) {
-		total_y *= -1;
-		total_x *= -1;
-	  }
-	  if(!total_y) {
-		total_y = 0.2;
-		if(rand()%2)
-		  total_y *= -1;
-	  }
-	  if(!total_x) {
-		total_x = 0.2;
-		if(rand()%2)
-		  total_x *= -1;
-	  }
-	  Enemies[i].vel_x = 0.5*total_x;
-	  Enemies[i].vel_y = 0.5*total_y;
-	  Bird.vel_x = -0.5*total_x;
-	  Bird.vel_y = -0.5*total_y;
-
-	  // Enemies[i].alive = 0;
-	}
   }
 }
 
@@ -198,14 +149,16 @@ void gravity() {
   for (int i=0; i<ENEMY_NUMBER; i++)
 	Enemies[i].vel_y -= GRAV_CONST;
 
-  MoveFixedColl(Floor, Bird);
-  for (int i=0; i<ENEMY_NUMBER; i++)
-	MoveFixedColl(Floor, Enemies[i]);
   for (int i=0; i<ENEMY_NUMBER; i++)
 	MovMovColl(Bird, Enemies[i]);
+
   for (int i=0; i<ENEMY_NUMBER; i++)
 	for(int j=i+1; j<ENEMY_NUMBER; j++)
 	  MovMovColl(Enemies[i], Enemies[j]);
+
+  MoveFixedColl(Floor, Bird);
+  for (int i=0; i<ENEMY_NUMBER; i++)
+	MoveFixedColl(Floor, Enemies[i]);
 
   Bird.x += Bird.vel_x;
   Bird.y += Bird.vel_y;
