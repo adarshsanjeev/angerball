@@ -51,8 +51,10 @@ public:
   float rest_const;
   float air_const;
 
+  bool alive;
+
   VAO *sprite;
-} Bird;
+} Enemies[ENEMY_NUMBER], Bird;
 
 class Wall {
 public:
@@ -78,48 +80,72 @@ public:
   VAO *barrel;
 } Cannon;
 
-class Enemy {
-public:
-  float x,y;
-  float radius;
-  float vel_x, vel_y;
-
-  float fric_const;
-  float elast_const;
-  float rest_const;
-  float air_const;
-
-  bool alive;
-
-  VAO *sprite;
-} Enemies[ENEMY_NUMBER];
-
 float clamp(float value, float min, float max) {
   return std::max(min, std::min(max, value));
 }
 
-void CheckFloorCollision()
+void MoveFixedColl(Wall& W, Character& C)
 {
-	glm::vec2 center(Bird.x, Bird.y);
-	glm::vec2 aabb_half_extents(Floor.size_x, Floor.size_y);
-	glm::vec2 aabb_center(Floor.x, Floor.y);
-	glm::vec2 difference = center - aabb_center;
-	glm::vec2 clamped = glm::clamp(difference, -aabb_half_extents, aabb_half_extents);
-	glm::vec2 closest = aabb_center + clamped;
-	difference = closest - center;
+  glm::vec2 center(C.x, C.y);
+  glm::vec2 aabb_half_extents(W.size_x, W.size_y);
+  glm::vec2 aabb_center(W.x, W.y);
+  glm::vec2 difference = center - aabb_center;
+  glm::vec2 clamped = glm::clamp(difference, -aabb_half_extents, aabb_half_extents);
+  glm::vec2 closest = aabb_center + clamped;
+  difference = closest - center;
 
-	if (glm::length(difference) < Bird.radius){
-	  Bird.vel_x *= Bird.fric_const;
-	  if (Bird.vel_y < 0)
-		Bird.vel_y = Bird.rest_const*abs(Bird.vel_y);
-	  if(abs(Bird.vel_y) < VEL_THRE) {
-	    Bird.vel_y = 0;
+  if (glm::length(difference) < C.radius){
+	C.vel_x *= C.fric_const;
+	if (C.vel_y < 0)
+	  C.vel_y = C.rest_const*abs(C.vel_y);
+	if(abs(C.vel_y) < VEL_THRE) {
+	  C.vel_y = 0;
 	}
   }
-	else {
-	  Bird.vel_x *= Bird.air_const;
-	  Bird.vel_y *= Bird.air_const;
+  else {
+	C.vel_x *= C.air_const;
+	C.vel_y *= C.air_const;
+  }
+}
+
+void MovMovColl(Character& A, Character& B)
+{
+  glm::vec2 CharA(A.x, A.y);
+  glm::vec2 CharB(B.x, B.y);
+  glm::vec2 difference = CharB - CharA;
+
+  if (glm::length(difference) <= (A.radius + B.radius)) {
+	// int angle = acos(dot(glm::normalize(difference), glm::normalize(glm::vec2(1,0))));
+	// angle = (angle/M_PI)*180;
+	// if (Bird.y > Enemies[i].y)
+	// 	angle *= -1;
+	// int v_tan = Bird.vel_x*cos(angle) + Bird.vel_y*sin(angle);
+	// int v_per = Bird.vel_y*cos(angle) + Bird.vel_x*sin(angle);
+	// Bird.vel_x = v_tan*cos(angle) + v_per*sin(angle);
+	// Bird.vel_y = v_tan*sin(angle) + v_per*cos(angle);
+	float total_x = A.vel_x + B.vel_x;
+	float total_y = A.vel_y + B.vel_y;
+	if (A.y < B.y) {
+	  total_y *= -1;
+	  total_x *= -1;
 	}
+	if(!total_y) {
+	  total_y = 0.2;
+	  if(rand()%2)
+		total_y *= -1;
+	}
+	if(!total_x) {
+	  total_x = 0.2;
+	  if(rand()%2)
+		total_x *= -1;
+	}
+	B.vel_x = 0.5*total_x;
+	B.vel_y = 0.5*total_y;
+	A.vel_x = -0.5*total_x;
+	A.vel_y = -0.5*total_y;
+
+	// Enemies[i].alive = 0;
+  }
 }
 
 void CheckEnemyIsKill()
@@ -166,41 +192,20 @@ void CheckEnemyIsKill()
   }
 }
 
-void CheckEnemyFloor()
-{
-  for (int i=0; i<ENEMY_NUMBER; i++) {
-	glm::vec2 center(Enemies[i].x, Enemies[i].y);
-	glm::vec2 aabb_half_extents(Floor.size_x, Floor.size_y);
-	glm::vec2 aabb_center(Floor.x, Floor.y);
-	glm::vec2 difference = center - aabb_center;
-	glm::vec2 clamped = glm::clamp(difference, -aabb_half_extents, aabb_half_extents);
-	glm::vec2 closest = aabb_center + clamped;
-	difference = closest - center;
-
-	if (glm::length(difference) < Enemies[i].radius){
-	  Enemies[i].vel_x *= Enemies[i].fric_const;
-	  if (Enemies[i].vel_y < 0)
-		Enemies[i].vel_y = Enemies[i].rest_const*abs(Enemies[i].vel_y);
-	  if(abs(Enemies[i].vel_y) < VEL_THRE) {
-	    Enemies[i].vel_y = 0;
-	}
-  }
-	else {
-	  Enemies[i].vel_x *= Enemies[i].air_const;
-	  Enemies[i].vel_y *= Enemies[i].air_const;
-	}
-  }
-}
-
 void gravity() {
 
   Bird.vel_y -= GRAV_CONST;
   for (int i=0; i<ENEMY_NUMBER; i++)
 	Enemies[i].vel_y -= GRAV_CONST;
 
-  CheckFloorCollision();
-  CheckEnemyFloor();
-  CheckEnemyIsKill();
+  MoveFixedColl(Floor, Bird);
+  for (int i=0; i<ENEMY_NUMBER; i++)
+	MoveFixedColl(Floor, Enemies[i]);
+  for (int i=0; i<ENEMY_NUMBER; i++)
+	MovMovColl(Bird, Enemies[i]);
+  for (int i=0; i<ENEMY_NUMBER; i++)
+	for(int j=i+1; j<ENEMY_NUMBER; j++)
+	  MovMovColl(Enemies[i], Enemies[j]);
 
   Bird.x += Bird.vel_x;
   Bird.y += Bird.vel_y;
@@ -636,12 +641,12 @@ void createWall ()
   // GL3 accepts only Triangles. Quads are not supported
   static const GLfloat vertex_buffer_data [] = {
 	-0.25,-1,0, // vertex 1
-	 0.25, 1,0, // vertex 2
-	 0.25, -1,0, // vertex 3
+	0.25, 1,0, // vertex 2
+	0.25, -1,0, // vertex 3
 
 	-0.25,-1,0, // vertex 3
 	-0.25, 1,0, // vertex 4
-	 0.25, 1,0  // vertex 1
+	0.25, 1,0  // vertex 1
   };
 
   static const GLfloat color_buffer_data [] = {
