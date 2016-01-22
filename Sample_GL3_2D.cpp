@@ -2,7 +2,7 @@
 #include <cmath>
 #include <fstream>
 #include <vector>
-
+#include <algorithm>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -84,6 +84,16 @@ float clamp(float value, float min, float max) {
 	return std::max(min, std::min(max, value));
 }
 
+int max_index(int* A) {
+  float max=A[0], index=0;
+  for(int i=1; i<4; i++)
+	if(A[i] > max) {
+	  max = A[i];
+	  index = i;
+  }
+  return index;
+}
+
 void MoveFixedColl(Wall& W, Character& C)
 {
 	glm::vec2 center(C.x, C.y);
@@ -94,13 +104,48 @@ void MoveFixedColl(Wall& W, Character& C)
 	glm::vec2 closest = aabb_center + clamped;
 	difference = closest - center;
 
-	if (glm::length(difference) < C.radius) {
-		C.Vel[0] *= C.fric_const;
-		if(C.Vel[1] < 0)
-			C.Vel[1] = C.rest_const*abs(C.Vel[1]);
-		if(abs(C.Vel[1]) < VEL_THRE)
-			C.Vel[1] *= 0;
+	// glm::vec2 RadiusVec = glm::normalize(difference)*C.radius;
+	// glm::vec2 offset = RadiusVec - difference;
+	// offset *= 0.4;
+
+	// if (glm::length(difference) < C.radius) {
+	// 	C.x -= offset[0];
+	// 	C.y -= offset[1];
+	// 	C.Vel[0] *= C.fric_const;
+	// 	if(C.Vel[1] < 0)
+	// 		C.Vel[1] = C.rest_const*abs(C.Vel[1]);
+	// 	if(abs(C.Vel[1]) < VEL_THRE)
+	// 		C.Vel[1] = 0;
+	// }
+	// else
+	// 	C.Vel *= C.air_const;
+	
+	enum direction {UP=0, LEFT=1, DOWN=2, RIGHT=3};
+	float dot_prod[4];
+	dot_prod[0] = glm::dot(difference, glm::vec2(0, 1));
+	dot_prod[1] = glm::dot(difference, glm::vec2(-1, 0));
+	dot_prod[2] = glm::dot(difference, glm::vec2(0, -1));
+	dot_prod[3] = glm::dot(difference, glm::vec2(1, 0));
+	if (glm::length(difference) <= C.radius) {
+	  // for(int i=0; i<4; i++)
+	  // 	cout<<dot_prod[i]<<endl;
+		switch(distance(dot_prod, max_element(dot_prod, dot_prod+4))) {
+		case UP:
+		case DOWN:
+			C.Vel[0] *= C.fric_const;
+			C.Vel[1] = C.rest_const*C.Vel[1]*-1;
+			if(abs(C.Vel[1]) < VEL_THRE)
+				C.Vel[1] = 0;
+			break;
+		case LEFT:
+		case RIGHT:
+			C.Vel[1] *= C.fric_const;
+			C.Vel[0] = C.rest_const*C.Vel[0]*-1;
+			if(abs(C.Vel[0]) < VEL_THRE)
+				C.Vel[0] = 0;
+			break;
 		}
+	}
 	else
 		C.Vel *= C.air_const;
 }
@@ -141,6 +186,8 @@ void gravity() {
 			MovMovColl(Enemies[i], Enemies[j]);
 
 	MoveFixedColl(Floor, Bird);
+	MoveFixedColl(CWall, Bird);
+
 	for (int i=0; i<ENEMY_NUMBER; i++)
 		MoveFixedColl(Floor, Enemies[i]);
 
@@ -640,7 +687,7 @@ void createBird ()
 	Bird.Vel = glm::vec2(0, 0);
 	Bird.fric_const = 0.96;
 	Bird.rest_const = 0.7;
-	Bird.air_const = 0.99;
+	Bird.air_const = 0.98;
 
 	static GLfloat vertex_buffer_data [3*365];
 	static GLfloat color_buffer_data [3*365];
