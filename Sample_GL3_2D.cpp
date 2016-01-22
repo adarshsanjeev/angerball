@@ -15,6 +15,7 @@
 #define MAX_POWER 1.9
 #define VEL_THRE 0.02
 #define ENEMY_NUMBER 5
+#define WOOD_NUMBER 2
 
 using namespace std;
 
@@ -54,7 +55,7 @@ public:
 	bool alive;
 
 	VAO *sprite;
-} Enemies[ENEMY_NUMBER], Bird;
+} Wood[WOOD_NUMBER], Enemies[ENEMY_NUMBER], Bird;
 
 class Wall {
 public:
@@ -85,13 +86,13 @@ float clamp(float value, float min, float max) {
 }
 
 int max_index(int* A) {
-  float max=A[0], index=0;
-  for(int i=1; i<4; i++)
-	if(A[i] > max) {
-	  max = A[i];
-	  index = i;
-  }
-  return index;
+	float max=A[0], index=0;
+	for(int i=1; i<4; i++)
+		if(A[i] > max) {
+			max = A[i];
+			index = i;
+		}
+	return index;
 }
 
 void MoveFixedColl(Wall& W, Character& C)
@@ -104,10 +105,9 @@ void MoveFixedColl(Wall& W, Character& C)
 	glm::vec2 closest = aabb_center + clamped;
 	difference = closest - center;
 
-	// glm::vec2 RadiusVec = glm::normalize(difference)*C.radius;
-	// glm::vec2 offset = RadiusVec - difference;
-	// offset *= 0.4;
-
+	// float overlap = glm::length(difference)-C.radius;
+	// glm::vec2 offset = glm::normalize(difference)*overlap;
+	// offset[1] -= 0.01;
 	// if (glm::length(difference) < C.radius) {
 	// 	C.x -= offset[0];
 	// 	C.y -= offset[1];
@@ -127,8 +127,8 @@ void MoveFixedColl(Wall& W, Character& C)
 	dot_prod[2] = glm::dot(difference, glm::vec2(0, -1));
 	dot_prod[3] = glm::dot(difference, glm::vec2(1, 0));
 	if (glm::length(difference) <= C.radius) {
-	  // for(int i=0; i<4; i++)
-	  // 	cout<<dot_prod[i]<<endl;
+		// C.x += offset[0];
+		// C.y += offset[1];
 		switch(distance(dot_prod, max_element(dot_prod, dot_prod+4))) {
 		case UP:
 		case DOWN:
@@ -161,44 +161,62 @@ void MovMovColl(Character& A, Character& B)
 	glm::vec2 CharB(B.x, B.y);
 	glm::vec2 difference = CharB - CharA;
 
+	float offset = glm::length(difference) - (A.radius + B.radius);
+
 	if (glm::length(difference) <= (A.radius + B.radius)) {
 
+		glm::vec2 change = glm::normalize(difference)*offset;
+		A.x += change[0];
+		A.y += change[1];
 		glm::vec2 Total = A.Vel + B.Vel;
 
 		if (A.y < B.y)
 			Total *= -1;
 
 		A.Vel = -0.5f * Total;
-		B.Vel = 0.5f * Total;
-		B.alive = 0;
+		B.Vel = 0.4f * Total;
+		if(abs(A.Vel[0]) < VEL_THRE)
+			A.Vel[0] = 0;
+		if(abs(A.Vel[1]) < VEL_THRE)
+			A.Vel[1] = 0;
+		if(abs(B.Vel[0]) < VEL_THRE)
+			A.Vel[0] = 0;
+		if(abs(B.Vel[1]) < VEL_THRE)
+			A.Vel[1] = 0;
+		// B.alive = 0;
 	}
 }
 
 void gravity() {
 
 	Bird.Vel[1] -= GRAV_CONST;
-
 	for (int i=0; i<ENEMY_NUMBER; i++)
 		Enemies[i].Vel[1] -= GRAV_CONST;
-
 	for (int i=0; i<ENEMY_NUMBER; i++)
 		MovMovColl(Bird, Enemies[i]);
-
 	for (int i=0; i<ENEMY_NUMBER; i++)
 		for(int j=i+1; j<ENEMY_NUMBER; j++)
 			MovMovColl(Enemies[i], Enemies[j]);
 
 	MoveFixedColl(Floor, Bird);
 	MoveFixedColl(CWall, Bird);
+	for (int i=0; i<ENEMY_NUMBER; i++)
+		MoveFixedColl(CWall, Enemies[i]);
 
 	for (int i=0; i<ENEMY_NUMBER; i++)
 		MoveFixedColl(Floor, Enemies[i]);
+	for (int i=0; i<WOOD_NUMBER; i++)
+		MoveFixedColl(Floor, Wood[i]);
 
 	Bird.x += Bird.Vel[0];
 	Bird.y += Bird.Vel[1];
 	for (int i=0; i<ENEMY_NUMBER; i++) {
 		Enemies[i].x += Enemies[i].Vel[0];
 		Enemies[i].y += Enemies[i].Vel[1];
+	}
+	for (int i=0; i<WOOD_NUMBER; i++) {
+		Wood[i].x += Wood[i].Vel[0];
+		Wood[i].y += Wood[i].Vel[1];
 	}
 }
 
@@ -690,7 +708,7 @@ void createBird ()
 	Bird.Vel = glm::vec2(0, 0);
 	Bird.fric_const = 0.96;
 	Bird.rest_const = 0.7;
-	Bird.air_const = 0.98;
+	Bird.air_const = 0.999;
 
 	static GLfloat vertex_buffer_data [3*365];
 	static GLfloat color_buffer_data [3*365];
@@ -721,6 +739,43 @@ void createBird ()
 
 	// create3DObject creates and returns a handle to a VAO that can be used later
 	Bird.sprite = create3DObject(GL_TRIANGLE_FAN, 362, vertex_buffer_data, color_buffer_data, GL_FILL);
+}
+
+void createWood ()
+{
+	for (int i=0; i<WOOD_NUMBER ;i++) {
+		Wood[i].x = -i;
+		Wood[i].y = -i;
+		Wood[i].radius = 0.2;
+		Wood[i].Vel = glm::vec2(0, 0);
+		Wood[i].alive = 1;
+		Wood[i].fric_const = 0.96;
+		Wood[i].rest_const = 0.7;
+		Wood[i].air_const = 0.95;
+
+		static const GLfloat vertex_buffer_data [] = {
+			-0.1,-0.1,0, // vertex 1
+			0.1,-0.1,0, // vertex 2
+			0.1, 0.1,0, // vertex 3
+
+			0.1, 0.1,0, // vertex 3
+			-0.1, 0.1,0, // vertex 4
+			-0.1,-0.1,0  // vertex 1
+		};
+
+		static const GLfloat color_buffer_data [] = {
+			1,0.5,0, // color 1
+			1,0.5,0, // color 2
+			1,0.5,0, // color 3
+
+			1,0.5,0, // color 3
+			1,0.5,0, // color 4
+			1,0.5,0  // color 1
+		};
+
+		// create3DObject creates and returns a handle to a VAO that can be used later
+		Wood[i].sprite = create3DObject(GL_TRIANGLES, 6, vertex_buffer_data, color_buffer_data, GL_FILL);
+	}
 }
 
 void createCannon()
@@ -902,6 +957,14 @@ void draw ()
 		draw3DObject(Enemies[i].sprite);
 	}
 
+	for(int i=0; i<ENEMY_NUMBER; i++) {
+		if (!Wood[i].alive)
+			continue;
+		MVP = VP * glm::translate (glm::vec3(Wood[i].x, Wood[i].y, 0));
+		glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+		draw3DObject(Wood[i].sprite);
+	}
+
 	//####################################################################################################
 
 	// Increment angles
@@ -974,6 +1037,7 @@ void initGL (GLFWwindow* window, int width, int height)
 	createCannon ();
 	createTehPower ();
 	createEnemies();
+	createWood ();
 
 	// Create and compile our GLSL program from the shaders
 	programID = LoadShaders( "Sample_GL.vert", "Sample_GL.frag" );
