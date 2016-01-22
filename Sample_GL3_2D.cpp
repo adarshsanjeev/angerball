@@ -12,7 +12,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #define GRAV_CONST 0.009
-#define MAX_POWER 2.5
+#define MAX_POWER 1.9
 #define VEL_THRE 0.02
 #define ENEMY_NUMBER 5
 
@@ -152,6 +152,8 @@ void MoveFixedColl(Wall& W, Character& C)
 
 void MovMovColl(Character& A, Character& B)
 {
+	if(!B.alive)
+		return;
 	if(dot(A.Vel, B.Vel) < 0)
 		return;
 
@@ -160,6 +162,7 @@ void MovMovColl(Character& A, Character& B)
 	glm::vec2 difference = CharB - CharA;
 
 	if (glm::length(difference) <= (A.radius + B.radius)) {
+
 		glm::vec2 Total = A.Vel + B.Vel;
 
 		if (A.y < B.y)
@@ -167,7 +170,7 @@ void MovMovColl(Character& A, Character& B)
 
 		A.Vel = -0.5f * Total;
 		B.Vel = 0.5f * Total;
-		// Enemies[i].alive = 0;
+		B.alive = 0;
 	}
 }
 
@@ -619,7 +622,7 @@ void createWall ()
 {
 	CWall.x = 0;
 	CWall.y = -2;
-	CWall.size_x = 0.5;
+	CWall.size_x = 0.3;
 	CWall.size_y = 1;
 
 	// GL3 accepts only Triangles. Quads are not supported
