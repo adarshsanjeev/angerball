@@ -215,6 +215,9 @@ void gravity() {
 	for (int i=0; i<WOOD_NUMBER; i++)
 		MoveFixedColl(Floor, Wood[i]);
 
+	Bird.Vel[0] = Bird.Vel[0]>0.3? 0.3:Bird.Vel[0];
+	Bird.Vel[1] = Bird.Vel[1]>0.3? 0.3:Bird.Vel[1];
+
 	Bird.x += Bird.Vel[0];
 	Bird.y += Bird.Vel[1];
 	for (int i=0; i<ENEMY_NUMBER; i++) {
@@ -405,7 +408,7 @@ bool triangle_rot_status = true;
 bool rectangle_rot_status = true;
 
 void fire_bird() {
-	Bird.x = Cannon.x-0.5;// + 0.1*sin((Cannon.angle*M_PI)/180);
+	Bird.x = Cannon.x;// + 0.1*sin((Cannon.angle*M_PI)/180);
 	Bird.y = Cannon.y;
 	Bird.Vel = glm::vec2(
 		Cannon.power * 0.2 * cos((Cannon.angle*M_PI)/180),
@@ -508,7 +511,7 @@ void mouseButton (GLFWwindow* window, int button, int action, int mods)
 	switch (button) {
 	case GLFW_MOUSE_BUTTON_LEFT:
 		if (action == GLFW_RELEASE)
-			triangle_rot_dir *= -1;
+		  fire_bird();
 		break;
 	case GLFW_MOUSE_BUTTON_RIGHT:
 		if (action == GLFW_RELEASE) {
@@ -951,7 +954,7 @@ void draw ()
 	// draw3DObject draws the VAO given to it using current MVP matrix
 	draw3DObject(Cannon.barrel);
 
-	MVP = VP * glm::translate (glm::vec3(PowerBar.x, PowerBar.y, 0)) * glm::scale(glm::vec3(Cannon.power, 1.0f, 1.0f));
+	MVP = VP * glm::translate (glm::vec3(PowerBar.x, PowerBar.y, 0)) * glm::scale(glm::vec3(2*Cannon.power, 1.0f, 1.0f));
 	glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
 	// draw3DObject draws the VAO given to it using current MVP matrix
 	draw3DObject(PowerBar.sprite);
@@ -1077,10 +1080,12 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
   ypos = ypos + Cannon.y;
   ypos *= -1;
   double angle = atan2(ypos, xpos);
+  double distance = sqrt(xpos*xpos+ypos*ypos);
+  distance = min(MAX_POWER, distance/2);
+  Cannon.power = distance;
   angle = (angle*180)/M_PI;
   angle = max(min(90.0, angle), -90.0);
   Cannon.angle = angle;
-  cout<<angle<<endl;
 }
 
 int main (int argc, char** argv)
