@@ -642,7 +642,7 @@ void createEnemies ()
 		Enemies[i].sprite = create3DObject(GL_TRIANGLE_FAN, 362, vertex_buffer_data, color_buffer_data, GL_FILL);
 	}
 }
-
+//https://docs.google.com/forms/d/15LQJ0LKgpjRv5ZO64RUf5wq45tUNiZ1ZlTEM1GpyKII/viewform?usp=form_confirm
 void createWall ()
 {
 	CWall.x = 0;
@@ -1066,6 +1066,23 @@ void initGL (GLFWwindow* window, int width, int height)
 	cout << "GLSL: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << endl;
 }
 
+void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
+{
+  xpos = xpos/100 - 4;
+  ypos = ypos/100 - 4;
+  if(xpos <-4 || xpos > 4)
+	if(ypos <-4 || ypos > 4)
+	  return;
+  xpos = xpos - Cannon.x;
+  ypos = ypos + Cannon.y;
+  ypos *= -1;
+  double angle = atan2(ypos, xpos);
+  angle = (angle*180)/M_PI;
+  angle = max(min(90.0, angle), -90.0);
+  Cannon.angle = angle;
+  cout<<angle<<endl;
+}
+
 int main (int argc, char** argv)
 {
 	int width = 800;
@@ -1090,7 +1107,8 @@ int main (int argc, char** argv)
 		glfwPollEvents();
 
 		gravity();
-
+		glfwSetCursorPosCallback(window, cursor_position_callback);
+		// The function signature for cursor position callbacks. More...
 		// Control based on time (Time based transformation like 5 degrees rotation every 0.5s)
 		current_time = glfwGetTime(); // Time in seconds
 		if ((current_time - last_update_time) >= 0.5) { // atleast 0.5s elapsed since last frame
