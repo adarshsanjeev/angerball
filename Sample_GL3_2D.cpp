@@ -12,7 +12,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #define GRAV_CONST 0.009
-#define MAX_POWER 1.9
+#define MAX_POWER 1.8
 #define VEL_THRE 0.02
 #define ENEMY_NUMBER 5
 #define WOOD_NUMBER 2
@@ -105,8 +105,9 @@ void MoveFixedColl(Wall& W, Character& C)
 	glm::vec2 closest = aabb_center + clamped;
 	difference = closest - center;
 
-	// float overlap = glm::length(difference)-C.radius;
-	// glm::vec2 offset = glm::normalize(difference)*overlap;
+	float overlap = glm::length(difference)-C.radius;
+	glm::vec2 offset = glm::normalize(difference)*overlap;
+	glm::vec2 rebound = glm::normalize(difference)*-0.01f;
 	// offset[1] -= 0.01;
 	// if (glm::length(difference) < C.radius) {
 	// 	C.x -= offset[0];
@@ -119,7 +120,10 @@ void MoveFixedColl(Wall& W, Character& C)
 	// }
 	// else
 	// 	C.Vel *= C.air_const;
-	
+
+	if (C.y < -2.9)
+		C.y += 0.1;
+
 	enum direction {UP=0, LEFT=1, DOWN=2, RIGHT=3};
 	float dot_prod[4];
 	dot_prod[0] = glm::dot(difference, glm::vec2(0, 1));
@@ -127,8 +131,6 @@ void MoveFixedColl(Wall& W, Character& C)
 	dot_prod[2] = glm::dot(difference, glm::vec2(0, -1));
 	dot_prod[3] = glm::dot(difference, glm::vec2(1, 0));
 	if (glm::length(difference) <= C.radius) {
-		// C.x += offset[0];
-		// C.y += offset[1];
 		switch(distance(dot_prod, max_element(dot_prod, dot_prod+4))) {
 		case UP:
 		case DOWN:
@@ -139,6 +141,9 @@ void MoveFixedColl(Wall& W, Character& C)
 			break;
 		case LEFT:
 		case RIGHT:
+		  C.Vel[0] += rebound[0];
+		  C.x += offset[0]*2;
+		  C.y += offset[1];
 			C.Vel[1] *= C.fric_const;
 			C.Vel[0] = C.rest_const*C.Vel[0]*-1;
 			if(abs(C.Vel[0]) < VEL_THRE)
@@ -166,6 +171,7 @@ void MovMovColl(Character& A, Character& B)
 	if (glm::length(difference) <= (A.radius + B.radius)) {
 
 		glm::vec2 change = glm::normalize(difference)*offset;
+		glm::vec2 rebound = glm::normalize(difference)*-0.007f;
 		A.x += change[0];
 		A.y += change[1];
 		glm::vec2 Total = A.Vel + B.Vel;
@@ -174,6 +180,7 @@ void MovMovColl(Character& A, Character& B)
 			Total *= -1;
 
 		A.Vel = -0.5f * Total;
+		A.Vel[0] += rebound[0];
 		B.Vel = 0.4f * Total;
 		if(abs(A.Vel[0]) < VEL_THRE)
 			A.Vel[0] = 0;
@@ -640,18 +647,18 @@ void createWall ()
 {
 	CWall.x = 0;
 	CWall.y = -2;
-	CWall.size_x = 0.3;
+	CWall.size_x = 0.31;
 	CWall.size_y = 1;
 
 	// GL3 accepts only Triangles. Quads are not supported
 	static const GLfloat vertex_buffer_data [] = {
-		-0.25,-1,0, // vertex 1
-		0.25, 1,0, // vertex 2
-		0.25, -1,0, // vertex 3
+		-0.28,-1,0, // vertex 1
+		0.28, 1,0, // vertex 2
+		0.28, -1,0, // vertex 3
 
-		-0.25,-1,0, // vertex 3
-		-0.25, 1,0, // vertex 4
-		0.25, 1,0  // vertex 1
+		-0.28,-1,0, // vertex 3
+		-0.28, 1,0, // vertex 4
+		0.28, 1,0  // vertex 1
 	};
 
 	static const GLfloat color_buffer_data [] = {
