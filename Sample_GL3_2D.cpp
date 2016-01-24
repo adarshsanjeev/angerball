@@ -12,7 +12,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #define GRAV_CONST 0.009
-#define MAX_POWER 1.8
+#define MAX_POWER 1.6
 #define VEL_THRE 0.02
 #define ENEMY_NUMBER 5
 #define WOOD_NUMBER 2
@@ -650,18 +650,18 @@ void createWall ()
 {
 	CWall.x = 0;
 	CWall.y = -2;
-	CWall.size_x = 0.31;
+	CWall.size_x = 0.4;
 	CWall.size_y = 1;
 
 	// GL3 accepts only Triangles. Quads are not supported
 	static const GLfloat vertex_buffer_data [] = {
-		-0.28,-1,0, // vertex 1
-		0.28, 1,0, // vertex 2
-		0.28, -1,0, // vertex 3
+		-0.37,-1,0, // vertex 1
+		0.37, 1,0, // vertex 2
+		0.37, -1,0, // vertex 3
 
-		-0.28,-1,0, // vertex 3
-		-0.28, 1,0, // vertex 4
-		0.28, 1,0  // vertex 1
+		-0.37,-1,0, // vertex 3
+		-0.37, 1,0, // vertex 4
+		0.37, 1,0  // vertex 1
 	};
 
 	static const GLfloat color_buffer_data [] = {
