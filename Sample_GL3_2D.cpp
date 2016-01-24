@@ -41,6 +41,17 @@ GLuint programID;
 
 //####################################################################################################
 
+struct Screen {
+	double x, y, z;
+} Game;
+
+struct Player {
+	int lives;
+	int score;
+	float wind;
+	bool game_over;
+} Player1;
+
 class Character {
 public:
 	float x, y;
@@ -190,7 +201,8 @@ void MovMovColl(Character& A, Character& B)
 			A.Vel[0] = 0;
 		if(abs(B.Vel[1]) < VEL_THRE)
 			A.Vel[1] = 0;
-		// B.alive = 0;
+		B.alive = 0;
+		Player1.score += 10;
 	}
 }
 
@@ -434,8 +446,6 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
 			fire_bird();
 			Cannon.power = 0;
 			break;
-		default:
-			break;
 		}
 	}
 	else if (action == GLFW_PRESS) {
@@ -443,15 +453,20 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
 		case GLFW_KEY_ESCAPE:
 			quit(window);
 			break;
-		case GLFW_KEY_SPACE:
-			Cannon.power = 0.1;
-			break;
-		default:
-			break;
 		}
 	}
 	else if (action == GLFW_REPEAT) {
 		switch (key) {
+		case GLFW_KEY_UP:
+			break;
+		case GLFW_KEY_DOWN:
+			break;
+		case GLFW_KEY_LEFT:
+			Game.x -= 0.1;
+			break;
+		case GLFW_KEY_RIGHT:
+			Game.x += 0.1;
+			break;
 		case GLFW_KEY_SPACE:
 			Cannon.power += 0.1;
 			Cannon.power = Cannon.power<MAX_POWER ? Cannon.power:MAX_POWER;
@@ -468,39 +483,21 @@ void keyboardChar (GLFWwindow* window, unsigned int key)
 	case 'q':
 		quit(window);
 		break;
-	case 'e':
+	case 'a':
 		Cannon.angle += 2;
 		Cannon.angle = Cannon.angle>90? 90:Cannon.angle;
 		break;
-	case 'r':
+	case 'b':
 		Cannon.angle -= 2;
 		Cannon.angle = Cannon.angle<-90? -90:Cannon.angle;
 		break;
-	case 'i':
-		Enemies[0].y += 1;
-		break;
-	case 'k':
-		Enemies[0].y -= 1;
-		break;
-	case 'j':
-		Enemies[0].x -= 1;
-		break;
-	case 'l':
-		Enemies[0].x += 1;
-		break;
-	case 'w':
-		Bird.y += 1;
+	case 'f':
+		Cannon.power += 0.1;
+		Cannon.power = Cannon.power<MAX_POWER ? Cannon.power:MAX_POWER;
 		break;
 	case 's':
-		Bird.y -= 1;
-		break;
-	case 'a':
-		Bird.x -= 1;
-		break;
-	case 'd':
-		Bird.x += 1;
-		break;
-	default:
+		Cannon.power -= 0.1;
+		Cannon.power = Cannon.power>0 ? Cannon.power:0;
 		break;
 	}
 }
@@ -650,18 +647,18 @@ void createWall ()
 {
 	CWall.x = 0;
 	CWall.y = -2;
-	CWall.size_x = 0.4;
-	CWall.size_y = 1;
+	CWall.size_x = 0.5;
+	CWall.size_y = 1.09;
 
 	// GL3 accepts only Triangles. Quads are not supported
 	static const GLfloat vertex_buffer_data [] = {
-		-0.37,-1,0, // vertex 1
-		0.37, 1,0, // vertex 2
-		0.37, -1,0, // vertex 3
+		-0.4,-1,0, // vertex 1
+		0.4, 1,0, // vertex 2
+		0.4, -1,0, // vertex 3
 
-		-0.37,-1,0, // vertex 3
-		-0.37, 1,0, // vertex 4
-		0.37, 1,0  // vertex 1
+		-0.4,-1,0, // vertex 3
+		-0.4, 1,0, // vertex 4
+		0.4, 1,0  // vertex 1
 	};
 
 	static const GLfloat color_buffer_data [] = {
@@ -884,7 +881,7 @@ void draw ()
 	// Compute Camera matrix (view)
 	// Matrices.view = glm::lookAt( eye, target, up ); // Rotating Camera for 3D
 	//  Don't change unless you are sure!!
-	Matrices.view = glm::lookAt(glm::vec3(0,0,3), glm::vec3(0,0,0), glm::vec3(0,1,0)); // Fixed camera for 2D (ortho) in XY plane
+	Matrices.view = glm::lookAt(glm::vec3(Game.x, Game.y, Game.z), glm::vec3(Game.x, Game.y, 0), glm::vec3(0, 1, 0)); // Fixed camera for 2D (ortho) in XY plane
 
 	// Compute ViewProject matrix as view/camera might not be changed for this frame (basic scenario)
 	//  Don't change unless you are sure!!
@@ -1088,6 +1085,16 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
   Cannon.angle = angle;
 }
 
+void resetGame()
+{
+	Game.x = 0;
+	Game.y = 0;
+	Game.z = 3;
+	Player1.lives = 5;
+	Player1.score = 0;
+	Player1.game_over = 0;
+}
+
 int main (int argc, char** argv)
 {
 	int width = 800;
@@ -1096,7 +1103,7 @@ int main (int argc, char** argv)
 	GLFWwindow* window = initGLFW(width, height);
 
 	initGL (window, width, height);
-
+	resetGame();
 	double last_update_time = glfwGetTime(), current_time;
 
 	/* Draw in loop */
