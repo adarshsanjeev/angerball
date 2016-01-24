@@ -15,7 +15,8 @@
 #define MAX_POWER 1.6
 #define VEL_THRE 0.02
 #define ENEMY_NUMBER 5
-#define WOOD_NUMBER 2
+#define WOOD_NUMBER 2000
+#define PANEL_NUMBER 1
 
 using namespace std;
 
@@ -58,6 +59,7 @@ public:
 	float radius;
 	glm::vec2 Vel;
 
+	float health;
 	float fric_const;
 	float elast_const;
 	float rest_const;
@@ -73,7 +75,7 @@ public:
 	float x, y;
 	float size_x, size_y;
 	VAO *sprite;
-} Floor, CWall;
+} Floor, CWall, Panels[PANEL_NUMBER];
 
 class Bar {
 public:
@@ -166,9 +168,9 @@ void MoveFixedColl(Wall& W, Character& C)
 		C.Vel *= C.air_const;
 }
 
-void MovMovColl(Character& A, Character& B)
+void MovMovColl(Character& A, Character& B, int killB)
 {
-	if(!B.alive)
+	if(!B.alive && killB != 2)
 		return;
 	if(dot(A.Vel, B.Vel) < 0)
 		return;
@@ -201,8 +203,10 @@ void MovMovColl(Character& A, Character& B)
 			A.Vel[0] = 0;
 		if(abs(B.Vel[1]) < VEL_THRE)
 			A.Vel[1] = 0;
-		B.alive = 0;
-		Player1.score += 10;
+		if(killB) {
+			B.alive = 0;
+			Player1.score += 10;
+		}
 	}
 }
 
@@ -211,21 +215,37 @@ void gravity() {
 	Bird.Vel[1] -= GRAV_CONST;
 	for (int i=0; i<ENEMY_NUMBER; i++)
 		Enemies[i].Vel[1] -= GRAV_CONST;
+
+	// Bird, Enemy
 	for (int i=0; i<ENEMY_NUMBER; i++)
-		MovMovColl(Bird, Enemies[i]);
+		MovMovColl(Bird, Enemies[i], 1);
+
+	// Enemy, Enemy
 	for (int i=0; i<ENEMY_NUMBER; i++)
 		for(int j=i+1; j<ENEMY_NUMBER; j++)
-			MovMovColl(Enemies[i], Enemies[j]);
+			MovMovColl(Enemies[i], Enemies[j], 0);
 
+	// Wood Bird
+	for (int i=0; i<WOOD_NUMBER; i++) {
+		if (Wood[i].alive)
+			MovMovColl(Bird, Wood[i], 2);
+		if (!Wood[i].alive)
+			Wood[i].Vel[1] -= GRAV_CONST*0.1;
+	}
+
+	// Bird Floor
 	MoveFixedColl(Floor, Bird);
+
+	// Bird Wall
 	MoveFixedColl(CWall, Bird);
+
+	// Enemy Wall
 	for (int i=0; i<ENEMY_NUMBER; i++)
 		MoveFixedColl(CWall, Enemies[i]);
 
+	// Enemy Floor
 	for (int i=0; i<ENEMY_NUMBER; i++)
 		MoveFixedColl(Floor, Enemies[i]);
-	for (int i=0; i<WOOD_NUMBER; i++)
-		MoveFixedColl(Floor, Wood[i]);
 
 	Bird.Vel[0] = Bird.Vel[0]>0.3? 0.3:Bird.Vel[0];
 	Bird.Vel[1] = Bird.Vel[1]>0.3? 0.3:Bird.Vel[1];
@@ -453,6 +473,12 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
 		case GLFW_KEY_ESCAPE:
 			quit(window);
 			break;
+		case GLFW_KEY_LEFT:
+			Game.x -= 0.1;
+			break;
+		case GLFW_KEY_RIGHT:
+			Game.x += 0.1;
+			break;
 		}
 	}
 	else if (action == GLFW_REPEAT) {
@@ -544,6 +570,8 @@ void reshapeWindow (GLFWwindow* window, int width, int height)
 	// Matrices.projection = glm::perspective (fov, (GLfloat) fbwidth / (GLfloat) fbheight, 0.1f, 500.0f);
 
 	// Ortho projection for 2D views
+	// float zoom = 1.0, pan = 0.0;
+	// Matrices.projection = glm::ortho(zoom*0.0f + pan, zoom + pan, zoom*0.0f, zoom, 0.1f, 500.0f);
 	Matrices.projection = glm::ortho(-4.0f, 4.0f, -4.0f, 4.0f, 0.1f, 500.0f);
 }
 
@@ -679,18 +707,18 @@ void createFloor ()
 {
 	Floor.x = 0;
 	Floor.y = -3.5;
-	Floor.size_x = 4;
+	Floor.size_x = 400;
 	Floor.size_y = 0.5;
 
 	// GL3 accepts only Triangles. Quads are not supported
 	static const GLfloat vertex_buffer_data [] = {
-		-4,-4,0, // vertex 1
-		4,-4,0, // vertex 2
-		4, -3,0, // vertex 3
+		-400,-4,0, // vertex 1
+		400,-4,0, // vertex 2
+		400, -3,0, // vertex 3
 
-		4, -3,0, // vertex 3
-		-4, -3,0, // vertex 4
-		-4,-4,0  // vertex 1
+		400, -3,0, // vertex 3
+		-400, -3,0, // vertex 4
+		-400,-4,0  // vertex 1
 	};
 
 	static const GLfloat color_buffer_data [] = {
@@ -709,6 +737,7 @@ void createFloor ()
 
 void createBird ()
 {
+	Bird.health = 5;
 	Bird.x = -2;
 	Bird.y = 0;
 	Bird.radius = 0.2;
@@ -751,8 +780,8 @@ void createBird ()
 void createWood ()
 {
 	for (int i=0; i<WOOD_NUMBER ;i++) {
-		Wood[i].x = -i;
-		Wood[i].y = -i;
+		Wood[i].x = 0.5+i*0.2;
+		Wood[i].y = -1.3;
 		Wood[i].radius = 0.2;
 		Wood[i].Vel = glm::vec2(0, 0);
 		Wood[i].alive = 1;
@@ -964,9 +993,7 @@ void draw ()
 		draw3DObject(Enemies[i].sprite);
 	}
 
-	for(int i=0; i<ENEMY_NUMBER; i++) {
-		if (!Wood[i].alive)
-			continue;
+	for(int i=0; i<WOOD_NUMBER; i++) {
 		MVP = VP * glm::translate (glm::vec3(Wood[i].x, Wood[i].y, 0));
 		glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
 		draw3DObject(Wood[i].sprite);
