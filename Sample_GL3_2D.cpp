@@ -15,7 +15,7 @@
 #define MAX_POWER 1.6
 #define VEL_THRE 0.02
 #define ENEMY_NUMBER 5
-#define WOOD_NUMBER 2000
+#define WOOD_NUMBER 40
 #define PANEL_NUMBER 1
 
 using namespace std;
@@ -168,6 +168,12 @@ void MoveFixedColl(Wall& W, Character& C)
 		C.Vel *= C.air_const;
 }
 
+/**
+   killB = 0, Don't kill B
+   killB = 1, kill B
+   killB = 2, Dunno
+   killB = 3, A acts like fixed
+ */
 void MovMovColl(Character& A, Character& B, int killB)
 {
 	if(!B.alive && killB != 2)
@@ -185,15 +191,18 @@ void MovMovColl(Character& A, Character& B, int killB)
 
 		glm::vec2 change = glm::normalize(difference)*offset;
 		glm::vec2 rebound = glm::normalize(difference)*-0.007f;
-		A.x += change[0];
-		A.y += change[1];
 		glm::vec2 Total = A.Vel + B.Vel;
 
 		if (A.y < B.y)
 			Total *= -1;
-
-		A.Vel = -0.5f * Total;
-		A.Vel[0] += rebound[0];
+		if (killB != 3) {
+			A.x += change[0];
+			A.y += change[1];
+			A.Vel = -0.5f * Total;
+			A.Vel[0] += rebound[0];
+		}
+		else
+			Total[1] *= 0;
 		B.Vel = 0.4f * Total;
 		if(abs(A.Vel[0]) < VEL_THRE)
 			A.Vel[0] = 0;
@@ -203,7 +212,7 @@ void MovMovColl(Character& A, Character& B, int killB)
 			A.Vel[0] = 0;
 		if(abs(B.Vel[1]) < VEL_THRE)
 			A.Vel[1] = 0;
-		if(killB) {
+		if(killB && killB != 3) {
 			B.alive = 0;
 			Player1.score += 10;
 		}
@@ -232,6 +241,12 @@ void gravity() {
 		if (!Wood[i].alive)
 			Wood[i].Vel[1] -= GRAV_CONST*0.1;
 	}
+
+	//Enemy Wood
+	for (int i=0; i<ENEMY_NUMBER; i++)
+		for(int j=0; j<WOOD_NUMBER; j++)
+			if (Wood[j].alive)
+				MovMovColl(Wood[j], Enemies[i], 3);
 
 	// Bird Floor
 	MoveFixedColl(Floor, Bird);
@@ -780,8 +795,14 @@ void createBird ()
 void createWood ()
 {
 	for (int i=0; i<WOOD_NUMBER ;i++) {
-		Wood[i].x = 0.5+i*0.2;
-		Wood[i].y = -1.3;
+		if (i<20) {
+			Wood[i].x = 0.5+i*0.2;
+			Wood[i].y = -1.3;
+		}
+		else if (i<30) {
+			Wood[i].x = 0.5;
+			Wood[i].y = -1.3+(i-19)*0.2;
+		}
 		Wood[i].radius = 0.2;
 		Wood[i].Vel = glm::vec2(0, 0);
 		Wood[i].alive = 1;
