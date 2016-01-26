@@ -43,6 +43,8 @@ struct GLMatrices {
 GLuint programID;
 
 //####################################################################################################
+vector<int> sevensegdecoder[10];
+VAO *sevenseg[15];
 
 struct Screen {
 	double x, y, z;
@@ -413,6 +415,86 @@ struct VAO* create3DObject (GLenum primitive_mode, int numVertices, const GLfloa
 		);
 
 	return vao;
+}
+
+VAO * createRectangle (float r1,float g1,float b1,float r2,float g2,float b2,float x1,float y1,float x2,float y2,float x3,float y3,float x4,float y4)
+{
+	VAO * rectangle;
+	GLfloat vertex_buffer_data [] = { x1,y1,0, x2,y2,0 , x3,y3,0, x4,y4,0, x3,y3,0 , x2,y2,0};
+	GLfloat color_buffer_data [] = {  r1,g1,b1, r1,g1,b1, r2,g2,b2,  r2,g2,b2, r2,g2,b2, r1,g1,b1}; // 1 , 2 , 3 , 4 , 3, 2
+	rectangle = create3DObject(GL_TRIANGLES, 6, vertex_buffer_data, color_buffer_data, GL_FILL);
+	return rectangle;
+}
+
+void createSevenSeg()
+{
+	sevenseg[0]=createRectangle(0.0,0.0,0.0,0.0,0.0,0.0, 0.0f/3,0.0f/3, 0.8f/3,0.0f/3 , 0.1f/3,0.1f/3, 0.7f/3,0.1f/3);
+	sevenseg[1]=createRectangle(0.0,0.0,0.0,0.0,0.0,0.0, 0.0f/3,0.1f/3, 0.1f/3,0.2f/3 , 0.0f/3,.9f/3, 0.1f/3,0.8f/3);
+	sevenseg[2]=createRectangle(0.0,0.0,0.0,0.0,0.0,0.0, 0.0f/3,1.0f/3, 0.1f/3,1.1f/3 , 0.0f/3,1.8f/3, 0.1f/3,1.7f/3);
+	sevenseg[3]=createRectangle(0.0,0.0,0.0,0.0,0.0,0.0, 0.1f/3,1.8f/3, 0.7f/3,1.8f/3 , 0.0f/3,1.9f/3, 0.8f/3,1.9f/3);
+	sevenseg[4]=createRectangle(0.0,0.0,0.0,0.0,0.0,0.0, 0.7f/3,1.1f/3, 0.8f/3,1.0f/3 , 0.7f/3,1.7f/3, 0.8f/3,1.8f/3);
+	sevenseg[5]=createRectangle(0.0,0.0,0.0,0.0,0.0,0.0, 0.7f/3,0.2f/3, 0.8f/3,0.1f/3 , 0.7f/3,0.8f/3, 0.8f/3,0.9f/3);
+	sevenseg[6]=createRectangle(0.0,0.0,0.0,0.0,0.0,0.0, 0.1f/3,0.95f/3, 0.7f/3,0.95f/3 , 0.2f/3,1.0f/3, 0.6f/3,1.0f/3);
+	sevenseg[7]=createRectangle(0.0,0.0,0.0,0.0,0.0,0.0, 0.2f/3,0.9f/3, 0.6f/3,0.9f/3 , 0.1f/3,0.95f/3, 0.7f/3,0.95f/3);
+
+
+	for(int i=0;i<6;i++)
+		sevensegdecoder[0].push_back(i);
+	sevensegdecoder[1].push_back(4);
+	sevensegdecoder[1].push_back(5);
+
+	sevensegdecoder[2].push_back(3);
+	sevensegdecoder[2].push_back(4);
+	sevensegdecoder[2].push_back(6);
+	sevensegdecoder[2].push_back(7);
+	sevensegdecoder[2].push_back(1);
+	sevensegdecoder[2].push_back(0);
+
+	sevensegdecoder[3].push_back(3);
+	sevensegdecoder[3].push_back(4);
+	sevensegdecoder[3].push_back(6);
+	sevensegdecoder[3].push_back(7);
+	sevensegdecoder[3].push_back(5);
+	sevensegdecoder[3].push_back(0);
+
+	sevensegdecoder[4].push_back(2);
+	sevensegdecoder[4].push_back(6);
+	sevensegdecoder[4].push_back(7);
+	sevensegdecoder[4].push_back(4);
+	sevensegdecoder[4].push_back(5);
+
+
+	sevensegdecoder[5].push_back(3);
+	sevensegdecoder[5].push_back(2);
+	sevensegdecoder[5].push_back(6);
+	sevensegdecoder[5].push_back(7);
+	sevensegdecoder[5].push_back(5);
+	sevensegdecoder[5].push_back(0);
+
+
+	sevensegdecoder[6].push_back(3);
+	sevensegdecoder[6].push_back(2);
+	sevensegdecoder[6].push_back(6);
+	sevensegdecoder[6].push_back(7);
+	sevensegdecoder[6].push_back(5);
+	sevensegdecoder[6].push_back(1);
+	sevensegdecoder[6].push_back(0);
+
+
+	sevensegdecoder[7].push_back(3);
+	sevensegdecoder[7].push_back(4);
+	sevensegdecoder[7].push_back(5);
+
+	for(int i=0;i<8;i++)
+		sevensegdecoder[8].push_back(i);
+
+	sevensegdecoder[9].push_back(2);
+	sevensegdecoder[9].push_back(3);
+	sevensegdecoder[9].push_back(4);
+	sevensegdecoder[9].push_back(6);
+	sevensegdecoder[9].push_back(7);
+	sevensegdecoder[9].push_back(5);
+
 }
 
 /* Generate VAO, VBOs and return VAO handle - Common Color for all vertices */
@@ -1261,6 +1343,46 @@ void draw ()
 
 	//####################################################################################################
 
+       int temp=Player1.score;
+	   float scorex=0.0f;
+	   //Creates the seven segment display for score
+       while(1)
+		{
+		for(int i=0;i<sevensegdecoder[temp%10].size();i++)
+		{
+			Matrices.model = glm::mat4(1.0f);
+			glm::mat4 pscore = glm::translate (glm::vec3(10.5f+scorex,2.0f, 0.0f));
+			Matrices.model*= pscore;
+			MVP = VP * Matrices.model;
+			glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+			draw3DObject(sevenseg[sevensegdecoder[temp%10][i]]);
+		}
+		temp/=10;
+		if(!temp)
+			break;
+		scorex-=1;
+		}
+
+       temp=15-bird_count;
+	   scorex=0.0f;
+	   //Creates the seven segment display for score
+       while(1)
+		{
+		for(int i=0;i<sevensegdecoder[temp%10].size();i++)
+		{
+			Matrices.model = glm::mat4(1.0f);
+			glm::mat4 pscore = glm::translate (glm::vec3(scorex-1,-1.0f, 0.0f));
+			Matrices.model*= pscore;
+			MVP = VP * Matrices.model;
+			glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+			draw3DObject(sevenseg[sevensegdecoder[temp%10][i]]);
+		}
+		temp/=10;
+		if(!temp)
+			break;
+		scorex-=1;
+		}
+
 	// Increment angles
 	float increments = 1;
 
@@ -1345,7 +1467,9 @@ void initGL (GLFWwindow* window, int width, int height)
 	createEnemies();
 	createWood ();
 	createScene ();
-	// Create and compile our GLSL program from the shaders
+	createSevenSeg();
+
+    // Create and compile our GLSL program from the shaders
 	programID = LoadShaders( "Sample_GL.vert", "Sample_GL.frag" );
 	// Get a handle for our "MVP" uniform
 	Matrices.MatrixID = glGetUniformLocation(programID, "MVP");
@@ -1425,8 +1549,14 @@ int main (int argc, char** argv)
 		// The function signature for cursor position callbacks. More...
 		// Control based on time (Time based transformation like 5 degrees rotation every 0.5s)
 		current_time = glfwGetTime(); // Time in seconds
-		if ((current_time - last_update_time) >= 0.5) { // atleast 0.5s elapsed since last frame
-			// do something every 0.5 seconds ..
+		if ((current_time - last_update_time) >= 0.1) {
+			// static int count = 8;
+			// if(count-- > 0)
+			// 	zoom -= 0.5;
+			// else {
+			// 	resetGame();
+			// }
+
 			last_update_time = current_time;
 		}
 	}
