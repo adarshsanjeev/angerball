@@ -17,8 +17,9 @@
 #define MAX_ENEMY 10
 #define MAX_WOOD 500
 
-int ENEMY_NUMBER = 6;
+int ENEMY_NUMBER = 1;
 int WOOD_NUMBER = 308;
+int enemies_left = ENEMY_NUMBER;
 
 using namespace std;
 
@@ -230,7 +231,8 @@ void gravity() {
 	// Bird, Enemy
 	for (int i=0; i<ENEMY_NUMBER; i++)
 		for (int j=0; j<bird_count; j++)
-			MovMovColl(Bird[j], Enemies[i], 1);
+			if(MovMovColl(Bird[j], Enemies[i], 1))
+				enemies_left--;
 
 	// Enemy, Enemy
 	for (int i=0; i<ENEMY_NUMBER; i++)
@@ -1343,11 +1345,11 @@ void draw ()
 
 	//####################################################################################################
 
-       int temp=Player1.score;
-	   float scorex=0.0f;
-	   //Creates the seven segment display for score
-       while(1)
-		{
+	int temp=Player1.score;
+	float scorex=0.0f;
+	//Creates the seven segment display for score
+	while(1)
+	{
 		for(int i=0;i<sevensegdecoder[temp%10].size();i++)
 		{
 			Matrices.model = glm::mat4(1.0f);
@@ -1361,13 +1363,13 @@ void draw ()
 		if(!temp)
 			break;
 		scorex-=1;
-		}
+	}
 
-       temp=15-bird_count;
-	   scorex=0.0f;
-	   //Creates the seven segment display for score
-       while(1)
-		{
+	temp=15-bird_count;
+	scorex=0.0f;
+	//Creates the seven segment display for score
+	while(1)
+	{
 		for(int i=0;i<sevensegdecoder[temp%10].size();i++)
 		{
 			Matrices.model = glm::mat4(1.0f);
@@ -1381,7 +1383,7 @@ void draw ()
 		if(!temp)
 			break;
 		scorex-=1;
-		}
+	}
 
 	// Increment angles
 	float increments = 1;
@@ -1513,6 +1515,7 @@ void resetGame()
 	Game.x = 3.6;
 	Game.y = 0;
 	Game.z = 3;
+	enemies_left = ENEMY_NUMBER;
 	Player1.lives = 5;
 	Player1.score = 0;
 	Player1.game_over = 0;
@@ -1546,16 +1549,14 @@ int main (int argc, char** argv)
 
 		gravity();
 		glfwSetCursorPosCallback(window, cursor_position_callback);
+
+		if(!enemies_left)
+			resetGame();
+
 		// The function signature for cursor position callbacks. More...
 		// Control based on time (Time based transformation like 5 degrees rotation every 0.5s)
 		current_time = glfwGetTime(); // Time in seconds
 		if ((current_time - last_update_time) >= 0.1) {
-			// static int count = 8;
-			// if(count-- > 0)
-			// 	zoom -= 0.5;
-			// else {
-			// 	resetGame();
-			// }
 
 			last_update_time = current_time;
 		}
