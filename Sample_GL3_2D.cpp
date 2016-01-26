@@ -12,12 +12,12 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #define GRAV_CONST 0.009
-#define MAX_POWER 1.8
+#define MAX_POWER 2.2
 #define VEL_THRE 0.02
 #define MAX_ENEMY 10
 #define MAX_WOOD 500
 
-int ENEMY_NUMBER = 0;
+int ENEMY_NUMBER = 6;
 int WOOD_NUMBER = 308;
 
 using namespace std;
@@ -720,9 +720,19 @@ void createRectangle ()
 
 void createEnemies ()
 {
+	Enemies[0].x =2;
+	Enemies[0].y =0;
+	Enemies[1].x =8;
+	Enemies[1].y =-2;
+	Enemies[2].x =8.5;
+	Enemies[2].y =-2;
+	Enemies[3].x =9;
+	Enemies[3].y =-2;
+	Enemies[4].x =4;
+	Enemies[4].y =-2.5;
+	Enemies[5].x =8.6;
+	Enemies[5].y =1.3;
 	for (int i=0; i<ENEMY_NUMBER ;i++) {
-		Enemies[i].x = i;
-		Enemies[i].y = 0;
 		Enemies[i].radius = 0.2;
 		Enemies[i].Vel = glm::vec2(0, 0);
 		Enemies[i].alive = 1;
