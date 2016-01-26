@@ -16,7 +16,6 @@
 #define VEL_THRE 0.02
 #define ENEMY_NUMBER 5
 #define WOOD_NUMBER 40
-#define PANEL_NUMBER 1
 
 using namespace std;
 
@@ -75,7 +74,7 @@ public:
 	float x, y;
 	float size_x, size_y;
 	VAO *sprite;
-} Floor, CWall, Panels[PANEL_NUMBER];
+} Floor, CWall;
 
 class Bar {
 public:
@@ -96,16 +95,6 @@ public:
 
 float clamp(float value, float min, float max) {
 	return std::max(min, std::min(max, value));
-}
-
-int max_index(int* A) {
-	float max=A[0], index=0;
-	for(int i=1; i<4; i++)
-		if(A[i] > max) {
-			max = A[i];
-			index = i;
-		}
-	return index;
 }
 
 void MoveFixedColl(Wall& W, Character& C)
@@ -154,9 +143,9 @@ void MoveFixedColl(Wall& W, Character& C)
 			break;
 		case LEFT:
 		case RIGHT:
-		  C.Vel[0] += rebound[0];
-		  C.x += offset[0]*2;
-		  C.y += offset[1];
+			C.Vel[0] += rebound[0];
+			C.x += offset[0]*2;
+			C.y += offset[1];
 			C.Vel[1] *= C.fric_const;
 			C.Vel[0] = C.rest_const*C.Vel[0]*-1;
 			if(abs(C.Vel[0]) < VEL_THRE)
@@ -173,7 +162,7 @@ void MoveFixedColl(Wall& W, Character& C)
    killB = 1, kill B
    killB = 2, Dunno
    killB = 3, A acts like fixed
- */
+*/
 void MovMovColl(Character& A, Character& B, int killB)
 {
 	if(!B.alive && killB != 2)
@@ -368,7 +357,6 @@ void quit(GLFWwindow *window)
 	exit(EXIT_SUCCESS);
 }
 
-
 /* Generate VAO, VBOs and return VAO handle */
 struct VAO* create3DObject (GLenum primitive_mode, int numVertices, const GLfloat* vertex_buffer_data, const GLfloat* color_buffer_data, GLenum fill_mode=GL_FILL)
 {
@@ -463,6 +451,8 @@ void fire_bird() {
 		);
 }
 
+float zoom = 4.0, pan = 0.0;
+
 /* Executed when a regular key is pressed/released/held-down */
 /* Prefered for Keyboard events */
 void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -485,28 +475,44 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
 	}
 	else if (action == GLFW_PRESS) {
 		switch (key) {
+		case GLFW_KEY_UP:
+			zoom -= 0.5;
+			zoom = max(0.5f, zoom);
+			break;
+		case GLFW_KEY_DOWN:
+			zoom += 0.5;
+			zoom = min(6.5f, zoom);
+			break;
 		case GLFW_KEY_ESCAPE:
 			quit(window);
 			break;
 		case GLFW_KEY_LEFT:
 			Game.x -= 0.1;
+			Game.x = max(0.0, Game.x);
 			break;
 		case GLFW_KEY_RIGHT:
 			Game.x += 0.1;
+			Game.x = min(4.4, Game.x);
 			break;
 		}
 	}
 	else if (action == GLFW_REPEAT) {
 		switch (key) {
 		case GLFW_KEY_UP:
+			zoom -= 0.5;
+			zoom = max(0.5f, zoom);
 			break;
 		case GLFW_KEY_DOWN:
+			zoom += 0.5;
+			zoom = min(6.5f, zoom);
 			break;
 		case GLFW_KEY_LEFT:
 			Game.x -= 0.1;
+			Game.x = max(0.0, Game.x);
 			break;
 		case GLFW_KEY_RIGHT:
 			Game.x += 0.1;
+			Game.x = min(4.4, Game.x);
 			break;
 		case GLFW_KEY_SPACE:
 			Cannon.power += 0.1;
@@ -540,6 +546,20 @@ void keyboardChar (GLFWwindow* window, unsigned int key)
 		Cannon.power -= 0.1;
 		Cannon.power = Cannon.power>0 ? Cannon.power:0;
 		break;
+	case 'i':
+		zoom += 0.5;
+		zoom = min(6.5f, zoom);
+		break;
+	case 'k':
+		zoom -= 0.5;
+		zoom = max(0.5f, zoom);
+		break;
+	case 'j':
+		pan+=0.5;
+		break;
+	case 'l':
+		pan-=0.5;
+		break;
 	}
 }
 
@@ -549,7 +569,7 @@ void mouseButton (GLFWwindow* window, int button, int action, int mods)
 	switch (button) {
 	case GLFW_MOUSE_BUTTON_LEFT:
 		if (action == GLFW_RELEASE)
-		  fire_bird();
+			fire_bird();
 		break;
 	case GLFW_MOUSE_BUTTON_RIGHT:
 		if (action == GLFW_RELEASE) {
@@ -560,7 +580,6 @@ void mouseButton (GLFWwindow* window, int button, int action, int mods)
 		break;
 	}
 }
-
 
 /* Executed when window is resized to 'width' and 'height' */
 /* Modify the bounds of the screen here in glm::ortho or Field of View in glm::Perspective */
@@ -585,9 +604,8 @@ void reshapeWindow (GLFWwindow* window, int width, int height)
 	// Matrices.projection = glm::perspective (fov, (GLfloat) fbwidth / (GLfloat) fbheight, 0.1f, 500.0f);
 
 	// Ortho projection for 2D views
-	// float zoom = 1.0, pan = 0.0;
-	// Matrices.projection = glm::ortho(zoom*0.0f + pan, zoom + pan, zoom*0.0f, zoom, 0.1f, 500.0f);
-	Matrices.projection = glm::ortho(-4.0f, 4.0f, -4.0f, 4.0f, 0.1f, 500.0f);
+	Matrices.projection = glm::ortho(zoom*-1.0f - pan, zoom + pan, zoom*-1.0f, zoom, 0.1f, 500.0f);
+	// Matrices.projection = glm::ortho(-4.0f, 4.0f, -4.0f, 4.0f, 0.1f, 500.0f);
 }
 
 VAO *triangle, *rectangle;
@@ -727,13 +745,13 @@ void createFloor ()
 
 	// GL3 accepts only Triangles. Quads are not supported
 	static const GLfloat vertex_buffer_data [] = {
-		-400,-4,0, // vertex 1
-		400,-4,0, // vertex 2
+		-400,-40,0, // vertex 1
+		400,-40,0, // vertex 2
 		400, -3,0, // vertex 3
 
 		400, -3,0, // vertex 3
 		-400, -3,0, // vertex 4
-		-400,-4,0  // vertex 1
+		-400,-40,0  // vertex 1
 	};
 
 	static const GLfloat color_buffer_data [] = {
@@ -1030,6 +1048,18 @@ void draw ()
 	rectangle_rotation = rectangle_rotation + increments*rectangle_rot_dir*rectangle_rot_status;
 }
 
+void scrollFunc(GLFWwindow *window, double xpos, double ypos)
+{
+	if(ypos == 1) {
+			zoom -= 0.5;
+			zoom = max(0.5f, zoom);
+	}
+	else {
+			zoom += 0.5;
+			zoom = min(6.5f, zoom);
+	}
+}
+
 /* Initialise glfw window, I/O callbacks and the renderer to use */
 /* Nothing to Edit here */
 GLFWwindow* initGLFW (int width, int height)
@@ -1074,6 +1104,7 @@ GLFWwindow* initGLFW (int width, int height)
 
 	/* Register function to handle mouse click */
 	glfwSetMouseButtonCallback(window, mouseButton);  // mouse button clicks
+	glfwSetScrollCallback(window, scrollFunc);
 
 	return window;
 }
@@ -1116,21 +1147,21 @@ void initGL (GLFWwindow* window, int width, int height)
 
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
-  xpos = xpos/100 - 4;
-  ypos = ypos/100 - 4;
-  if(xpos <-4 || xpos > 4)
-	if(ypos <-4 || ypos > 4)
-	  return;
-  xpos = xpos - Cannon.x;
-  ypos = ypos + Cannon.y;
-  ypos *= -1;
-  double angle = atan2(ypos, xpos);
-  double distance = sqrt(xpos*xpos+ypos*ypos);
-  distance = min(MAX_POWER, distance/2);
-  Cannon.power = distance;
-  angle = (angle*180)/M_PI;
-  angle = max(min(90.0, angle), -90.0);
-  Cannon.angle = angle;
+	xpos = xpos/100 - 4;
+	ypos = ypos/100 - 4;
+	if(xpos <-4 || xpos > 4)
+		if(ypos <-4 || ypos > 4)
+			return;
+	xpos = xpos - Cannon.x;
+	ypos = ypos + Cannon.y;
+	ypos *= -1;
+	double angle = atan2(ypos, xpos);
+	double distance = sqrt(xpos*xpos+ypos*ypos);
+	distance = min(MAX_POWER, distance/2);
+	Cannon.power = distance;
+	angle = (angle*180)/M_PI;
+	angle = max(min(90.0, angle), -90.0);
+	Cannon.angle = angle;
 }
 
 void resetGame()
@@ -1156,6 +1187,7 @@ int main (int argc, char** argv)
 
 	/* Draw in loop */
 	while (!glfwWindowShouldClose(window)) {
+		reshapeWindow (window, width, height);
 
 		// OpenGL Draw commands
 		draw();
