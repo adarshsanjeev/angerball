@@ -17,6 +17,8 @@
 #define ENEMY_NUMBER 5
 #define WOOD_NUMBER 40
 
+int enemy_used = 5;
+
 using namespace std;
 
 struct VAO {
@@ -67,7 +69,9 @@ public:
 	bool alive;
 
 	VAO *sprite;
-} Wood[WOOD_NUMBER], Enemies[ENEMY_NUMBER], Bird;
+} Wood[WOOD_NUMBER], Enemies[ENEMY_NUMBER], Bird[20];
+
+int bird_count = 0;
 
 class Wall {
 public:
@@ -210,26 +214,34 @@ void MovMovColl(Character& A, Character& B, int killB)
 
 void gravity() {
 
-	Bird.Vel[1] -= GRAV_CONST;
+	for (int j=0; j<bird_count; j++)
+		Bird[j].Vel[1] -= GRAV_CONST;
 	for (int i=0; i<ENEMY_NUMBER; i++)
 		Enemies[i].Vel[1] -= GRAV_CONST;
 
 	// Bird, Enemy
 	for (int i=0; i<ENEMY_NUMBER; i++)
-		MovMovColl(Bird, Enemies[i], 1);
+		for (int j=0; j<bird_count; j++)
+			MovMovColl(Bird[j], Enemies[i], 1);
 
 	// Enemy, Enemy
 	for (int i=0; i<ENEMY_NUMBER; i++)
 		for(int j=i+1; j<ENEMY_NUMBER; j++)
 			MovMovColl(Enemies[i], Enemies[j], 0);
 
+    // //Bird, Bird
+	// for (int i=0; i<bird_count; i++)
+	// 	for(int j=i+1; j<bird_count; j++)
+	// 		MovMovColl(Bird[i], Bird[j], 0);
+
 	// Wood Bird
-	for (int i=0; i<WOOD_NUMBER; i++) {
-		if (Wood[i].alive)
-			MovMovColl(Bird, Wood[i], 2);
-		if (!Wood[i].alive)
-			Wood[i].Vel[1] -= GRAV_CONST*0.1;
-	}
+	for (int i=0; i<WOOD_NUMBER; i++)
+		for (int j=0; j<bird_count; j++) {
+			if (Wood[i].alive)
+				MovMovColl(Bird[j], Wood[i], 2);
+			if (!Wood[i].alive)
+				Wood[i].Vel[1] -= GRAV_CONST*0.1;
+		}
 
 	//Enemy Wood
 	for (int i=0; i<ENEMY_NUMBER; i++)
@@ -238,10 +250,12 @@ void gravity() {
 				MovMovColl(Wood[j], Enemies[i], 3);
 
 	// Bird Floor
-	MoveFixedColl(Floor, Bird);
+	for (int j=0; j<bird_count; j++)
+		MoveFixedColl(Floor, Bird[j]);
 
 	// Bird Wall
-	MoveFixedColl(CWall, Bird);
+	for (int j=0; j<bird_count; j++)
+		MoveFixedColl(CWall, Bird[j]);
 
 	// Enemy Wall
 	for (int i=0; i<ENEMY_NUMBER; i++)
@@ -251,11 +265,14 @@ void gravity() {
 	for (int i=0; i<ENEMY_NUMBER; i++)
 		MoveFixedColl(Floor, Enemies[i]);
 
-	Bird.Vel[0] = Bird.Vel[0]>0.3? 0.3:Bird.Vel[0];
-	Bird.Vel[1] = Bird.Vel[1]>0.3? 0.3:Bird.Vel[1];
+	for (int j=0; j<bird_count; j++) {
+		Bird[j].Vel[0] = Bird[j].Vel[0]>0.3? 0.3:Bird[j].Vel[0];
+		Bird[j].Vel[1] = Bird[j].Vel[1]>0.3? 0.3:Bird[j].Vel[1];
 
-	Bird.x += Bird.Vel[0];
-	Bird.y += Bird.Vel[1];
+		Bird[j].x += Bird[j].Vel[0];
+		Bird[j].y += Bird[j].Vel[1];
+	}
+
 	for (int i=0; i<ENEMY_NUMBER; i++) {
 		Enemies[i].x += Enemies[i].Vel[0];
 		Enemies[i].y += Enemies[i].Vel[1];
@@ -442,13 +459,58 @@ float rectangle_rot_dir = 1;
 bool triangle_rot_status = true;
 bool rectangle_rot_status = true;
 
+void createBird (int index, float x, float y)
+{
+	Bird[index].health = 5;
+	Bird[index].x = x;
+	Bird[index].alive = 1;
+	Bird[index].y = y;
+	Bird[index].radius = 0.2;
+	Bird[index].Vel = glm::vec2(0, 0);
+	Bird[index].fric_const = 0.96;
+	Bird[index].rest_const = 0.7;
+	Bird[index].air_const = 0.999;
+
+	static GLfloat vertex_buffer_data [3*365];
+	static GLfloat color_buffer_data [3*365];
+
+	int k = 0;
+	vertex_buffer_data[0] = 0;
+	color_buffer_data[0] = 1;
+	k++;
+	vertex_buffer_data[1] = 0;
+	color_buffer_data[1] = 1;
+	k++;
+	color_buffer_data[2] = 1;
+	vertex_buffer_data[2] = 0;
+	k++;
+
+	for (int i=0; i<=360; ++i)
+	{
+		vertex_buffer_data[k] = cos((i*M_PI)/180)*Bird[index].radius;
+		color_buffer_data[k] = 1;
+		k++;
+		vertex_buffer_data[k] = sin((i*M_PI)/180)*Bird[index].radius;
+		color_buffer_data[k] = 0;
+		k++;
+		vertex_buffer_data[k] = 0;
+		color_buffer_data[k] = 0;
+		k++;
+	}
+
+	// create3DObject creates and returns a handle to a VAO that can be used later
+	Bird[index].sprite = create3DObject(GL_TRIANGLE_FAN, 362, vertex_buffer_data, color_buffer_data, GL_FILL);
+}
+
 void fire_bird() {
-	Bird.x = Cannon.x;// + 0.1*sin((Cannon.angle*M_PI)/180);
-	Bird.y = Cannon.y;
-	Bird.Vel = glm::vec2(
+	if(bird_count >= 15)
+		return;
+	createBird(bird_count, Cannon.x, Cannon.y);
+	Bird[bird_count].Vel = glm::vec2(
 		Cannon.power * 0.2 * cos((Cannon.angle*M_PI)/180),
 		Cannon.power * 0.2 * sin((Cannon.angle*M_PI)/180)
 		);
+	bird_count++;
 }
 
 float zoom = 4.0, pan = 0.0;
@@ -481,17 +543,19 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
 			break;
 		case GLFW_KEY_DOWN:
 			zoom += 0.5;
-			zoom = min(6.5f, zoom);
+			zoom = min(4.0f, zoom);
 			break;
 		case GLFW_KEY_ESCAPE:
 			quit(window);
 			break;
 		case GLFW_KEY_LEFT:
 			Game.x -= 0.1;
+			PowerBar.x -= 0.1;
 			Game.x = max(0.0, Game.x);
 			break;
 		case GLFW_KEY_RIGHT:
 			Game.x += 0.1;
+			PowerBar.x += 0.1;
 			Game.x = min(4.4, Game.x);
 			break;
 		}
@@ -500,10 +564,12 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
 		switch (key) {
 		case GLFW_KEY_UP:
 			zoom -= 0.5;
+			PowerBar.x -= 0.1;
 			zoom = max(0.5f, zoom);
 			break;
 		case GLFW_KEY_DOWN:
 			zoom += 0.5;
+			PowerBar.x += 0.1;
 			zoom = min(6.5f, zoom);
 			break;
 		case GLFW_KEY_LEFT:
@@ -522,6 +588,8 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
 	}
 }
 
+void resetGame();
+
 /* Executed for character input (like in text boxes) */
 void keyboardChar (GLFWwindow* window, unsigned int key)
 {
@@ -529,6 +597,9 @@ void keyboardChar (GLFWwindow* window, unsigned int key)
 	case 'Q':
 	case 'q':
 		quit(window);
+		break;
+	case 'r':
+		resetGame();
 		break;
 	case 'a':
 		Cannon.angle += 2;
@@ -602,6 +673,8 @@ void reshapeWindow (GLFWwindow* window, int width, int height)
 	// Store the projection matrix in a variable for future use
 	// Perspective projection for 3D views
 	// Matrices.projection = glm::perspective (fov, (GLfloat) fbwidth / (GLfloat) fbheight, 0.1f, 500.0f);
+
+	pan = zoom;
 
 	// Ortho projection for 2D views
 	Matrices.projection = glm::ortho(zoom*-1.0f - pan, zoom + pan, zoom*-1.0f, zoom, 0.1f, 500.0f);
@@ -686,12 +759,12 @@ void createEnemies ()
 		vertex_buffer_data[2] = 0;
 		k++;
 
-		for (int i=0; i<=360; ++i)
+		for (int j=0; j<=360; ++j)
 		{
-			vertex_buffer_data[k] = cos((i*M_PI)/180)*Bird.radius;
+			vertex_buffer_data[k] = cos((j*M_PI)/180)*Enemies[i].radius;
 			color_buffer_data[k] = 0;
 			k++;
-			vertex_buffer_data[k] = sin((i*M_PI)/180)*Bird.radius;
+			vertex_buffer_data[k] = sin((j*M_PI)/180)*Enemies[i].radius;
 			color_buffer_data[k] = 0.5;
 			k++;
 			vertex_buffer_data[k] = 0;
@@ -703,7 +776,7 @@ void createEnemies ()
 		Enemies[i].sprite = create3DObject(GL_TRIANGLE_FAN, 362, vertex_buffer_data, color_buffer_data, GL_FILL);
 	}
 }
-//https://docs.google.com/forms/d/15LQJ0LKgpjRv5ZO64RUf5wq45tUNiZ1ZlTEM1GpyKII/viewform?usp=form_confirm
+
 void createWall ()
 {
 	CWall.x = 0;
@@ -723,13 +796,13 @@ void createWall ()
 	};
 
 	static const GLfloat color_buffer_data [] = {
-		1,1,0, // color 1
-		1,1,0, // color 2
-		1,1,0, // color 3
+		1,0,0, // color 1
+		1,0,0, // color 2
+		1,0,0, // color 3
 
-		1,1,0, // color 3
-		1,1,0, // color 4
-		1,1,0  // color 1
+		1,0,0, // color 3
+		1,0,0, // color 4
+		1,0,0  // color 1
 	};
 
 	// create3DObject creates and returns a handle to a VAO that can be used later
@@ -766,48 +839,6 @@ void createFloor ()
 
 	// create3DObject creates and returns a handle to a VAO that can be used later
 	Floor.sprite = create3DObject(GL_TRIANGLES, 6, vertex_buffer_data, color_buffer_data, GL_FILL);
-}
-
-void createBird ()
-{
-	Bird.health = 5;
-	Bird.x = -2;
-	Bird.y = 0;
-	Bird.radius = 0.2;
-	Bird.Vel = glm::vec2(0, 0);
-	Bird.fric_const = 0.96;
-	Bird.rest_const = 0.7;
-	Bird.air_const = 0.999;
-
-	static GLfloat vertex_buffer_data [3*365];
-	static GLfloat color_buffer_data [3*365];
-
-	int k = 0;
-	vertex_buffer_data[0] = 0;
-	color_buffer_data[0] = 1;
-	k++;
-	vertex_buffer_data[1] = 0;
-	color_buffer_data[1] = 1;
-	k++;
-	color_buffer_data[2] = 1;
-	vertex_buffer_data[2] = 0;
-	k++;
-
-	for (int i=0; i<=360; ++i)
-	{
-		vertex_buffer_data[k] = cos((i*M_PI)/180)*Bird.radius;
-		color_buffer_data[k] = 1;
-		k++;
-		vertex_buffer_data[k] = sin((i*M_PI)/180)*Bird.radius;
-		color_buffer_data[k] = 0;
-		k++;
-		vertex_buffer_data[k] = 0;
-		color_buffer_data[k] = 0;
-		k++;
-	}
-
-	// create3DObject creates and returns a handle to a VAO that can be used later
-	Bird.sprite = create3DObject(GL_TRIANGLE_FAN, 362, vertex_buffer_data, color_buffer_data, GL_FILL);
 }
 
 void createWood ()
@@ -1005,10 +1036,12 @@ void draw ()
 	// draw3DObject draws the VAO given to it using current MVP matrix
 	draw3DObject(Cannon.base);
 
-	MVP = VP * glm::translate (glm::vec3(Bird.x, Bird.y, 0));
+	for (int j=0; j<bird_count; j++) {
+	MVP = VP * glm::translate (glm::vec3(Bird[j].x, Bird[j].y, 0));
 	glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
 	// draw3DObject draws the VAO given to it using current MVP matrix
-	draw3DObject(Bird.sprite);
+	draw3DObject(Bird[j].sprite);
+	}
 
 	Matrices.model = glm::mat4(1.0f);
 	glm::mat4 translateBarrel = glm::translate (glm::vec3(Cannon.x, Cannon.y, 0));
@@ -1119,7 +1152,6 @@ void initGL (GLFWwindow* window, int width, int height)
 	createRectangle ();
 	createFloor ();
 	createWall ();
-	createBird ();
 	createCannon ();
 	createTehPower ();
 	createEnemies();
@@ -1133,7 +1165,7 @@ void initGL (GLFWwindow* window, int width, int height)
 	reshapeWindow (window, width, height);
 
 	// Background color of the scene
-	glClearColor (1.0f, 0.0f, 10.0f, 0.0f); // R, G, B, A
+	glClearColor (0.5f, 0.5f, 1.0f, 0.0f); // R, G, B, A
 	glClearDepth (1.0f);
 
 	glEnable (GL_DEPTH_TEST);
@@ -1166,17 +1198,20 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 
 void resetGame()
 {
-	Game.x = 0;
+	Game.x = 3.6;
 	Game.y = 0;
 	Game.z = 3;
 	Player1.lives = 5;
 	Player1.score = 0;
 	Player1.game_over = 0;
+	bird_count = 0;
+	createEnemies();
+	createWood();
 }
 
 int main (int argc, char** argv)
 {
-	int width = 800;
+	int width = 1400;
 	int height = 800;
 
 	GLFWwindow* window = initGLFW(width, height);
@@ -1191,7 +1226,6 @@ int main (int argc, char** argv)
 
 		// OpenGL Draw commands
 		draw();
-
 		// Swap Frame Buffer in double buffering
 		glfwSwapBuffers(window);
 
