@@ -1,0 +1,12 @@
+# Controls
+
+The controls for the game are the same as the ones given in the pdf.
+Mouse or keyboard can be used.
+
+# Text
+
+Due to some errors, the text is not displayed. The sample code given did not run, with the error
+'Could not find arial.tff'
+despite it being present. A post was made on moodle, but didn't get any solution, so as a workaround,
+the function createSevenSeg() has been taken. The only function of this is to print the score and
+birds left.

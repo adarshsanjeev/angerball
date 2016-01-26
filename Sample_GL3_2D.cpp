@@ -17,7 +17,7 @@
 #define MAX_ENEMY 10
 #define MAX_WOOD 500
 
-int ENEMY_NUMBER = 1;
+int ENEMY_NUMBER = 6;
 int WOOD_NUMBER = 308;
 int enemies_left = ENEMY_NUMBER;
 
