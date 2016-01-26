@@ -15,10 +15,10 @@
 #define MAX_POWER 1.8
 #define VEL_THRE 0.02
 #define MAX_ENEMY 10
-#define MAX_WOOD 200
+#define MAX_WOOD 500
 
-int ENEMY_NUMBER = 5;
-int WOOD_NUMBER = 0;
+int ENEMY_NUMBER = 0;
+int WOOD_NUMBER = 308;
 
 using namespace std;
 
@@ -781,13 +781,13 @@ void createWall ()
 	};
 
 	static const GLfloat color_buffer_data [] = {
-		1,0,0, // color 1
-		1,0,0, // color 2
-		1,0,0, // color 3
+		0.4,0.4,0.4, // color 1
+		0.4,0.4,0.4, // color 2
+		0.4,0.4,0.4, // color 3
 
-		1,0,0, // color 3
-		1,0,0, // color 4
-		1,0,0  // color 1
+		0.4,0.4,0.4, // color 3
+		0.4,0.4,0.4, // color 4
+		0.4,0.4,0.4  // color 1
 	};
 
 	// create3DObject creates and returns a handle to a VAO that can be used later
@@ -828,38 +828,94 @@ void createFloor ()
 
 void createWood ()
 {
-    WOOD_NUMBER = 200;
+	static const GLfloat vertex_buffer_data [] = {
+		-0.1,-0.1,0, // vertex 1
+		0.1,-0.1,0, // vertex 2
+		0.1, 0.1,0, // vertex 3
+
+		0.1, 0.1,0, // vertex 3
+		-0.1, 0.1,0, // vertex 4
+		-0.1,-0.1,0  // vertex 1
+	};
 	{
 		for (int i=0; i<MAX_WOOD ;i++) {
 			if(i<30) {
-				Wood[i].x = 1.5+i*0.2;
-				Wood[i].y = -1.1;
+				Wood[i].x = 5.5+i*0.2;
+				Wood[i].y = -2.9;
 			}
-			else if(i<60) {
-				Wood[i].x = 1.5+(i-30)*0.2;
-				Wood[i].y = 0.9;
+            else if(i<60) {
+				Wood[i].x = 5.5+(i-30)*0.2;
+				Wood[i].y = -2.9;
 			}
-			else if (i<80) {
-				Wood[i].x = 1.5;
-				Wood[i].y = -2.9+(i-60)*0.2;
+			else if(i<86) {
+				Wood[i].x = 5.9+(i-60)*0.2;
+				Wood[i].y = -2.7;
 			}
-			else if (i<100) {
-				Wood[i].x = 4.5;
-				Wood[i].y = -2.9+(i-80)*0.2;
+            else if(i<112) {
+				Wood[i].x = 5.9+(i-86)*0.2;
+				Wood[i].y = -2.7;
 			}
-			else if (i<120) {
-				Wood[i].x = 7.5;
-				Wood[i].y = -2.9+(i-100)*0.2;
+
+			// Pillar #1
+			else if(i<125) {
+				Wood[i].x = 6.5;
+				Wood[i].y = -2.5+(i-112)*0.2;
 			}
-			// for (int i=0; i<WOOD_NUMBER ;i++) {
-			// 	if (i<20) {
-			// 		Wood[i].x = 0.9+i*0.2;
-			// 		Wood[i].y = -1.3;
-			// 	}
-			// 	else if (i<30) {
-			// 		Wood[i].x = 0.9;
-			// 		Wood[i].y = -1.3+(i-19)*0.2;
-			// }
+			else if(i<138) {
+				Wood[i].x = 6.7;
+				Wood[i].y = -2.5+(i-125)*0.2;
+			}
+			else if(i<151) {
+				Wood[i].x = 9.9;
+				Wood[i].y = -2.5+(i-138)*0.2;
+			}
+
+			// Pillar #2
+			else if(i<164) {
+				Wood[i].x = 10.1;
+				Wood[i].y = -2.5+(i-151)*0.2;
+			}
+			else if(i<177) {
+				Wood[i].x = 10.3;
+				Wood[i].y = -2.5+(i-164)*0.2;
+			}
+			else if(i<190) {
+				Wood[i].x = 6.9;
+				Wood[i].y = -2.5+(i-177)*0.2;
+			}
+
+			// Top
+			else if(i<216) {
+				Wood[i].x = 5.9+(i-190)*0.2;
+				Wood[i].y = 0;
+			}
+            else if(i<242) {
+				Wood[i].x = 5.9+(i-216)*0.2;
+				Wood[i].y = 0;
+			}
+			else if(i<264) {
+				Wood[i].x = 6.3+(i-242)*0.2;
+				Wood[i].y = 0.2;
+			}
+            else if(i<282) {
+				Wood[i].x = 6.7+(i-264)*0.2;
+				Wood[i].y = 0.4;
+			}
+
+			// Tower
+			else if(i<292) {
+				Wood[i].x = 1.7;
+				Wood[i].y = -2.9+(i-282)*0.2;
+			}
+			else if(i<302) {
+				Wood[i].x = 2.3;
+				Wood[i].y = -2.9+(i-292)*0.2;
+			}
+			else if(i<308) {
+				Wood[i].x = 1.5+(i-302)*0.2;
+				Wood[i].y = -1;
+			}
+
 			Wood[i].radius = 0.2;
 			Wood[i].Vel = glm::vec2(0, 0);
 			Wood[i].alive = 1;
@@ -867,17 +923,7 @@ void createWood ()
 			Wood[i].rest_const = 0.7;
 			Wood[i].air_const = 0.95;
 
-			static const GLfloat vertex_buffer_data [] = {
-				-0.1,-0.1,0, // vertex 1
-				0.1,-0.1,0, // vertex 2
-				0.1, 0.1,0, // vertex 3
-
-				0.1, 0.1,0, // vertex 3
-				-0.1, 0.1,0, // vertex 4
-				-0.1,-0.1,0  // vertex 1
-			};
-
-			static const GLfloat color_buffer_data [] = {
+			GLfloat color_buffer_data [] = {
 				0.6,0.3,0, // color 1
 				0.6,0.3,0, // color 2
 				0.6,0.3,0, // color 3
@@ -887,6 +933,9 @@ void createWood ()
 				0.6,0.3,0  // color 1
 			};
 
+			if(i<112 || (i>192&&i<282))
+				for(int j=0; j<18; j++)
+					color_buffer_data[j]=0.6f;
 			// create3DObject creates and returns a handle to a VAO that can be used later
 			Wood[i].sprite = create3DObject(GL_TRIANGLES, 6, vertex_buffer_data, color_buffer_data, GL_FILL);
 		}
@@ -967,9 +1016,8 @@ class Scenery {
 public:
 	float x,y;
 	VAO *grass, *mountain;
-	VAO *sun;
+	VAO *sun, *snow, *cloud;
 } Scene;
-
 
 
 void createScene()
@@ -998,6 +1046,32 @@ void createScene()
 		0.25,0,0.5, // color 3
 	};
 	Scene.mountain = create3DObject(GL_TRIANGLES, 3, vertex_mountain_data, color_mountain_data, GL_FILL);
+
+	GLfloat vertex_snow_data [] = {
+		0, 0, 0, // vertex 3
+		-0.732*2, -0.5,0, // vertex 4
+		0.732*2, -0.5,0  // vertex 1
+	};
+
+	GLfloat color_snow_data [] = {
+		1,1,1, // color 1
+		1,1,1, // color 2
+		1,1,1, // color 3
+	};
+	Scene.snow = create3DObject(GL_TRIANGLES, 3, vertex_snow_data, color_snow_data, GL_FILL);
+
+	GLfloat vertex_cloud_data [] = {
+		0, 0, 0, // vertex 3
+		-0.732*2, -0.5,0, // vertex 4
+		0.732*2, -0.5,0  // vertex 1
+	};
+
+	GLfloat color_cloud_data [] = {
+		1,1,1, // color 1
+		1,1,1, // color 2
+		1,1,1, // color 3
+	};
+	Scene.cloud = create3DObject(GL_TRIANGLES, 3, vertex_cloud_data, color_cloud_data, GL_FILL);
 
 	GLfloat vertex_sun_data [3*365];
 	GLfloat color_sun_data [3*365];
@@ -1106,6 +1180,18 @@ void draw ()
 		MVP = VP * glm::translate (glm::vec3(Cannon.x-0.5+5*i, Cannon.y+3, 0));
 		glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
 		draw3DObject(Scene.mountain);
+	}
+
+	for(int i=-10; i<10; i++) {
+		MVP = VP * glm::translate (glm::vec3(Cannon.x-0.5+5*i, Cannon.y+3, 0));
+		glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+		draw3DObject(Scene.snow);
+	}
+
+	for(int i=-10; i<10; i++) {
+		MVP = VP * glm::translate (glm::vec3(Cannon.x-3+5*i, Cannon.y+3.8, 0));
+		glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+		draw3DObject(Scene.snow);
 	}
 
 	MVP = VP;
@@ -1280,7 +1366,7 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 	ypos = ypos + Cannon.y;
 	ypos *= -1;
 	double angle = atan2(ypos, xpos);
-	double distance = sqrt(xpos*xpos+ypos*ypos);
+	double distance = sqrt(xpos*xpos+ypos*ypos)/2;
 	distance = min(MAX_POWER, distance/2);
 	Cannon.power = distance;
 	angle = (angle*180)/M_PI;
