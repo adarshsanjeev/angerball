@@ -1,7 +1,7 @@
 all: angerball
 
-angerball: Sample_GL3_2D.cpp glad.c
-	g++ -o angerball Sample_GL3_2D.cpp glad.c -lGLEW -lGL -ldl -lglfw
+angerball: angerball.cpp glad.c Sample_GL.frag Sample_GL.vert
+	g++ -o angerball angerball.cpp glad.c -lGLEW -lGL -ldl -lglfw
 
 clean:
 	rm angerball

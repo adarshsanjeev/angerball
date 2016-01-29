@@ -1,5 +1,10 @@
 # Angerball
 
 To compile, run:
- * make angerball
- * ./angerball
+	make
+ 
+To run the binary
+	./angerball
+	
+There isn't much to the game, it is quite simple and has only one level to play. You have
+15 shots to destroy all the green targets.

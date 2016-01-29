@@ -1,12 +1,13 @@
 # Controls
 
-The controls for the game are the same as the ones given in the pdf.
-Mouse or keyboard can be used.
+You can use either the mouse or the keyboard to play the game. To play using the mouse,
+simply use mouse to aim, and to increase/decrease the power of the shot.
 
-# Text
+Keyboard:
 
-Due to some errors, the text is not displayed. The sample code given did not run, with the error
-'Could not find arial.tff'
-despite it being present. A post was made on moodle, but didn't get any solution, so as a workaround,
-the function createSevenSeg() has been taken. The only function of this is to print the score and
-birds left.
+a - Raise the cannon
+b - Lower the cannon
+f - Increase the power
+s - Decrease the power
+SPACE - Fire
+r - Reset the game
